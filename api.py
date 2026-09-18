@@ -6,12 +6,16 @@ import joblib
 import os
 import re
 from tensorflow.keras.models import load_model
+from flask import send_file
 
 from rag_routes import rag_bp
 from explainer_routes import explainer_bp
 import db
 
 app = Flask(__name__)
+@app.route("/")
+def home():
+    return send_file(os.path.join(app.root_path, "index.html"))
 
 # In production, set ALLOWED_ORIGIN to your deployed frontend's exact URL
 # (e.g. https://udyamflow.vercel.app) instead of leaving this wide open.
