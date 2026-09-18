@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Anaconda
+anaconda_projects/
+
+# Local environment dump
+requirements-full.txt
+
+# Environment / secrets
+.env

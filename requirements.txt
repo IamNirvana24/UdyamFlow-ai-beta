@@ -1,0 +1,10 @@
+flask
+flask-cors
+tensorflow
+scikit-learn==1.6.1
+pandas
+numpy
+joblib
+sqlalchemy
+psycopg2-binary
+gunicorn

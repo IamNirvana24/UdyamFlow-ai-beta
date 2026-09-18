@@ -1,0 +1,4753 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UdyamFlow AI — Industrial Approval Navigator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root {
+    --ink: #0D1730;
+    --ink-2: #16224A;
+    --ink-3: #1F2E5C;
+    --paper: #F6F1E4;
+    --paper-raised: #FFFFFF;
+    --saffron: #C9691E;
+    --saffron-deep: #A8530F;
+    --saffron-soft: #F2E3D5;
+    --amber: #E8A33D;
+    --clear-green: #35866090;
+    --line: #E2DBC9;
+    --muted: #6E6752;
+    --green: #2E6B4F;
+    --font-display: 'Fraunces', serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    line-height: 1.5;
+  }
+
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 24px; }
+  .wrap-wide { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+  /* ---------- Sticky top nav : gives the single page a multi-section, app-like feel ---------- */
+  nav.topnav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px clamp(20px, 4vw, 40px);
+    background: rgba(9, 15, 34, 0.72);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(246, 241, 228, 0.09);
+    transform: translateY(-120%);
+    transition: transform 0.5s cubic-bezier(.16,.8,.24,1), background 0.3s ease, border-color 0.3s ease;
+  }
+
+  nav.topnav.show { transform: translateY(0); }
+
+  nav.topnav.on-paper {
+    background: rgba(246, 241, 228, 0.88);
+    border-bottom-color: var(--line);
+  }
+
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    letter-spacing: 0.08em;
+    color: #F6F1E4;
+    cursor: pointer;
+    background: none;
+    border: none;
+  }
+
+  nav.topnav.on-paper .nav-brand { color: var(--ink); }
+
+  .nav-brand .nav-mark {
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    background: var(--amber);
+    color: var(--ink);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 26px;
+  }
+
+  .nav-links button.nav-link {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: rgba(246, 241, 228, 0.62);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 0;
+    transition: color 0.2s ease;
+  }
+
+  nav.topnav.on-paper .nav-links button.nav-link { color: var(--muted); }
+
+  .nav-links button.nav-link:hover,
+  .nav-links button.nav-link.active { color: var(--amber); }
+
+  nav.topnav.on-paper .nav-links button.nav-link:hover,
+  nav.topnav.on-paper .nav-links button.nav-link.active { color: var(--saffron); }
+
+  .nav-cta {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--ink);
+    background: var(--amber);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.15s ease;
+  }
+
+  .nav-cta:hover { background: #F2B85C; transform: translateY(-1px); }
+
+  @media (max-width: 860px) { .nav-links { display: none; } }
+
+  /* ---------- Reveal-on-scroll for new narrative sections ---------- */
+  .reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.7s ease, transform 0.7s ease; }
+  .reveal.in-view { opacity: 1; transform: translateY(0); }
+
+  /* ---------- Full-bleed hero : "Clearance Deck" night-ops panel ---------- */
+  header.hero {
+    position: relative;
+    overflow: hidden;
+    min-height: 620px;
+    display: flex;
+    align-items: center;
+    background: radial-gradient(120% 140% at 15% 0%, #1B2A57 0%, #0D1730 55%, #090F22 100%);
+  }
+
+  .network-hero {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .network-hero canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(100deg, rgba(9,15,34,0.94) 0%, rgba(9,15,34,0.78) 38%, rgba(9,15,34,0.42) 62%, rgba(9,15,34,0.15) 100%);
+    pointer-events: none;
+  }
+
+  .wrap.hero-inner {
+    position: relative;
+    z-index: 2;
+    padding-top: 88px;
+    padding-bottom: 88px;
+  }
+
+  .eyebrow-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 34px;
+  }
+
+  .mark {
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    background: var(--amber);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ink);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 17px;
+    box-shadow: 0 0 0 5px rgba(232, 163, 61, 0.15);
+  }
+
+  .wordmark { font-weight: 600; font-size: 15px; letter-spacing: 0.01em; color: #F6F1E4; }
+
+  h1.headline {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(38px, 5.4vw, 58px);
+    line-height: 1.06;
+    max-width: 15ch;
+    margin: 0 0 24px;
+    color: #FBF8F0;
+  }
+
+  .sub {
+    font-size: 18px;
+    color: #BFC8E4;
+    max-width: 52ch;
+    margin: 0;
+  }
+
+  .pain-quote {
+    margin-top: 36px;
+    padding-left: 20px;
+    border-left: 3px solid var(--amber);
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 20px;
+    color: #F0EBDD;
+    max-width: 44ch;
+  }
+
+  .network-caption {
+    margin-top: 56px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12.5px;
+    font-family: var(--font-mono);
+    color: rgba(246, 241, 228, 0.6);
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #6FCF97;
+    box-shadow: 0 0 0 3px rgba(111, 207, 151, 0.2);
+    animation: statusPulse 2.2s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes statusPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .network-caption .layer-tag {
+    background: rgba(246, 241, 228, 0.08);
+    padding: 4px 10px;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+  }
+
+  /* ---------- Form section (paper zone) ---------- */
+  section.form-section { padding: 64px 0 28px; }
+
+  .section-label {
+    font-size: 13px;
+    font-family: var(--font-mono);
+    color: var(--muted);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-label::before {
+    content: '';
+    width: 14px;
+    height: 1px;
+    background: var(--saffron);
+    display: inline-block;
+  }
+
+  .section-label.light { color: #9DA8CC; }
+  .section-label.light::before { background: var(--amber); }
+
+  h2.section-title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 28px;
+    margin: 0 0 34px;
+  }
+
+  h2.section-title.light { color: #FBF8F0; }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px 24px;
+  }
+
+  @media (max-width: 620px) {
+    .grid-2 { grid-template-columns: 1fr; }
+  }
+
+  .field { margin-bottom: 0; }
+
+  .field label {
+    display: block;
+    font-size: 13.5px;
+    color: var(--muted);
+    margin-bottom: 7px;
+  }
+
+  .field select, .field input[type="number"] {
+    width: 100%;
+    padding: 12px 4px;
+    border: none;
+    border-bottom: 1.5px solid var(--line);
+    border-radius: 0;
+    background: transparent;
+    font-family: var(--font-body);
+    font-size: 15.5px;
+    color: var(--ink);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .field select { padding: 12px 4px; cursor: pointer; }
+
+  .field select:focus, .field input:focus {
+    outline: none;
+    border-bottom-color: var(--saffron);
+    box-shadow: 0 1.5px 0 0 var(--saffron);
+  }
+
+  .unit-hint {
+    font-size: 12.5px;
+    font-family: var(--font-mono);
+    color: var(--saffron);
+    margin-top: 6px;
+    min-height: 16px;
+  }
+
+  .checks {
+    display: flex;
+    gap: 24px;
+    margin-top: 32px;
+    flex-wrap: wrap;
+  }
+
+  .check-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 14.5px;
+  }
+
+  .check-item input { width: 17px; height: 17px; accent-color: var(--saffron); }
+
+  button.predict-btn {
+    margin-top: 40px;
+    width: 100%;
+    padding: 17px;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    border-radius: 6px;
+    font-family: var(--font-body);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.01em;
+    transition: background 0.18s ease, transform 0.12s ease, box-shadow 0.18s ease;
+  }
+
+  button.predict-btn:hover:not(:disabled) {
+    background: var(--ink-3);
+    box-shadow: 0 6px 20px rgba(13, 23, 48, 0.25);
+    transform: translateY(-1px);
+  }
+  button.predict-btn:active:not(:disabled) { transform: translateY(0); }
+  button.predict-btn:disabled { background: var(--muted); cursor: wait; }
+
+  .loading-spinner {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    border: 2px solid var(--line);
+    border-top-color: var(--saffron);
+    display: inline-block;
+    margin-right: 10px;
+    vertical-align: -3px;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------- Results — full-bleed "Clearance Deck" panel ---------- */
+  section.results {
+    padding: 76px 0 110px;
+    display: none;
+    background: radial-gradient(130% 100% at 85% 0%, #1B2A57 0%, #0D1730 50%, #090F22 100%);
+    color: #E7E9F5;
+  }
+
+  section.results.visible { display: block; }
+
+  .results-summary {
+    font-family: var(--font-display);
+    font-size: 24px;
+    margin-bottom: 34px;
+    color: #FBF8F0;
+  }
+
+  .results-summary strong { color: var(--amber); }
+
+  .approval-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .approval-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px 18px;
+    background: rgba(246, 241, 228, 0.04);
+    border: 1px solid rgba(246, 241, 228, 0.09);
+    border-radius: 8px;
+    opacity: 0;
+    animation: rowReveal 0.5s ease forwards;
+  }
+
+  .approval-row.required { border-left: 3px solid #6FCF97; }
+  .approval-row.not-required { animation-name: rowRevealDim; }
+
+  @keyframes rowReveal {
+    from { opacity: 0; transform: translateX(-8px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes rowRevealDim {
+    from { opacity: 0; transform: translateX(-8px); }
+    to { opacity: 0.45; transform: translateX(0); }
+  }
+
+  .approval-name { font-size: 15px; font-weight: 500; color: #F1F2FA; }
+
+  .approval-tag {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  .tag-required { background: rgba(111, 207, 151, 0.14); color: #6FCF97; }
+  .tag-not-required { background: rgba(246, 241, 228, 0.06); color: #8891B5; }
+
+  .confidence { font-family: var(--font-mono); font-size: 12.5px; color: #8891B5; margin-left: 10px; }
+
+  .disclaimer {
+    margin-top: 40px;
+    padding: 16px 18px;
+    background: rgba(232, 163, 61, 0.1);
+    border: 1px solid rgba(232, 163, 61, 0.25);
+    border-radius: 8px;
+    font-size: 13.5px;
+    color: #E8CFA0;
+  }
+
+  /* ---------------------------------------------------------
+     Compliance copilot — matches the results section's dark
+     theme (rgba cream-on-navy cards, amber accents)
+     --------------------------------------------------------- */
+  .copilot-wrap {
+    margin-top: 56px;
+    padding-top: 44px;
+    border-top: 1px solid rgba(246, 241, 228, 0.1);
+  }
+
+  .copilot-intro {
+    color: #9DA8CC;
+    font-size: 14.5px;
+    line-height: 1.7;
+    max-width: 62ch;
+    margin: 0 0 24px;
+  }
+
+  .copilot-panel {
+    background: rgba(246, 241, 228, 0.04);
+    border: 1px solid rgba(246, 241, 228, 0.09);
+    border-radius: 10px;
+    padding: 20px;
+  }
+
+  .copilot-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .copilot-chip {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: #C9D0E8;
+    background: rgba(246, 241, 228, 0.05);
+    border: 1px solid rgba(246, 241, 228, 0.14);
+    border-radius: 20px;
+    padding: 7px 14px;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
+
+  .copilot-chip:hover {
+    background: rgba(232, 163, 61, 0.12);
+    border-color: rgba(232, 163, 61, 0.4);
+    color: var(--amber);
+  }
+
+  .copilot-thread {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 16px;
+    max-height: 460px;
+    overflow-y: auto;
+  }
+
+  .copilot-thread:empty { display: none; }
+
+  .copilot-msg {
+    padding: 13px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 1.65;
+    opacity: 0;
+    animation: rowReveal 0.4s ease forwards;
+  }
+
+  .copilot-msg.user {
+    background: rgba(232, 163, 61, 0.1);
+    border: 1px solid rgba(232, 163, 61, 0.22);
+    color: #FBF8F0;
+    align-self: flex-end;
+    max-width: 80%;
+  }
+
+  .copilot-msg.assistant {
+    background: rgba(246, 241, 228, 0.045);
+    border: 1px solid rgba(246, 241, 228, 0.09);
+    color: #E7E9F5;
+  }
+
+  .copilot-msg.assistant.no-match {
+    border-left: 3px solid #E8A33D;
+  }
+
+  .copilot-msg .copilot-mode-tag {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #6FCF97;
+    background: rgba(111, 207, 151, 0.12);
+    border-radius: 4px;
+    padding: 2px 7px;
+    margin-bottom: 8px;
+  }
+
+  .copilot-msg .copilot-mode-tag.extractive {
+    color: #8891B5;
+    background: rgba(246, 241, 228, 0.07);
+  }
+
+  .copilot-citations {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(246, 241, 228, 0.08);
+  }
+
+  .copilot-citation {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: #8891B5;
+    background: rgba(246, 241, 228, 0.05);
+    border: 1px solid rgba(246, 241, 228, 0.1);
+    border-radius: 4px;
+    padding: 3px 8px;
+  }
+
+  .copilot-typing {
+    display: flex;
+    gap: 4px;
+    padding: 4px 2px;
+  }
+
+  .copilot-typing span {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #8891B5;
+    animation: copilotTypingBounce 1.2s infinite ease-in-out;
+  }
+
+  .copilot-typing span:nth-child(2) { animation-delay: 0.15s; }
+  .copilot-typing span:nth-child(3) { animation-delay: 0.3s; }
+
+  @keyframes copilotTypingBounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+    30% { transform: translateY(-4px); opacity: 1; }
+  }
+
+  .copilot-input-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  .copilot-input-row input {
+    flex: 1;
+    background: rgba(9, 15, 34, 0.4);
+    border: 1px solid rgba(246, 241, 228, 0.14);
+    border-radius: 8px;
+    padding: 12px 14px;
+    color: #F1F2FA;
+    font-family: var(--font-body);
+    font-size: 14px;
+  }
+
+  .copilot-input-row input:focus {
+    outline: none;
+    border-color: rgba(232, 163, 61, 0.5);
+  }
+
+  .copilot-input-row input::placeholder { color: #5C6690; }
+
+  .copilot-ask-btn {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: #0D1730;
+    background: var(--amber);
+    border: none;
+    border-radius: 8px;
+    padding: 0 20px;
+    cursor: pointer;
+    transition: filter 0.2s ease;
+  }
+
+  .copilot-ask-btn:hover { filter: brightness(1.08); }
+  .copilot-ask-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .journey-ask-btn {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: #8891B5;
+    background: rgba(246, 241, 228, 0.05);
+    border: 1px solid rgba(246, 241, 228, 0.12);
+    border-radius: 5px;
+    padding: 5px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    align-self: center;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .journey-ask-btn:hover {
+    background: rgba(232, 163, 61, 0.12);
+    border-color: rgba(232, 163, 61, 0.4);
+    color: var(--amber);
+  }
+
+  .journey-why-btn {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: #6FCF97;
+    background: rgba(111, 207, 151, 0.08);
+    border: 1px solid rgba(111, 207, 151, 0.25);
+    border-radius: 5px;
+    padding: 5px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    align-self: center;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .journey-why-btn:hover {
+    background: rgba(111, 207, 151, 0.16);
+    border-color: rgba(111, 207, 151, 0.45);
+  }
+
+  .journey-explanation {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    margin-left: 44px;
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: #C9D0E8;
+    transition: max-height 0.3s ease, opacity 0.3s ease, margin 0.3s ease, padding 0.3s ease;
+  }
+
+  .journey-explanation.open {
+    max-height: 260px;
+    opacity: 1;
+    margin-top: 8px;
+    margin-bottom: 4px;
+    padding: 12px 16px;
+    background: rgba(111, 207, 151, 0.05);
+    border: 1px solid rgba(111, 207, 151, 0.15);
+    border-left: 3px solid #6FCF97;
+    border-radius: 6px;
+    overflow-y: auto;
+  }
+
+  /* ---------------------------------------------------------
+     Interactive dependency graph — a custom vanilla-JS/SVG node
+     graph (drag, pan, zoom) built to match React Flow's behavior
+     without pulling React into a non-React page.
+     --------------------------------------------------------- */
+  .download-report-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: #0D1730;
+    background: var(--amber);
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    margin: 18px 0 32px;
+    cursor: pointer;
+    transition: filter 0.2s ease, transform 0.2s ease;
+  }
+
+  .download-report-btn:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+  }
+
+  .download-report-btn:disabled {
+    opacity: 0.55;
+    cursor: wait;
+    transform: none;
+  }
+
+  .journey-view-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .journey-view-toggle {
+    display: flex;
+    gap: 6px;
+    background: rgba(246, 241, 228, 0.04);
+    border: 1px solid rgba(246, 241, 228, 0.1);
+    border-radius: 8px;
+    padding: 4px;
+  }
+
+  .view-toggle-btn {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: #8891B5;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  .view-toggle-btn:hover { color: #C9D0E8; }
+
+  .view-toggle-btn.active {
+    background: rgba(232, 163, 61, 0.16);
+    color: var(--amber);
+  }
+
+  .journey-graph-wrap {
+    display: none;
+  }
+
+  .journey-graph-wrap.active {
+    display: block;
+  }
+
+  .graph-hint {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: #6B7499;
+    margin-bottom: 10px;
+  }
+
+  .graph-canvas {
+    position: relative;
+    width: 100%;
+    height: 480px;
+    background:
+      radial-gradient(circle at center, rgba(246,241,228,0.03) 1px, transparent 1px);
+    background-size: 22px 22px;
+    background-color: rgba(9, 15, 34, 0.3);
+    border: 1px solid rgba(246, 241, 228, 0.09);
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: grab;
+    touch-action: none;
+  }
+
+  .graph-canvas.panning { cursor: grabbing; }
+
+  #graph-svg { display: block; }
+
+  .graph-edge {
+    stroke: rgba(246, 241, 228, 0.22);
+    stroke-width: 1.6;
+    fill: none;
+    transition: stroke 0.2s ease;
+  }
+
+  .graph-edge.highlighted {
+    stroke: var(--amber);
+    stroke-width: 2.2;
+  }
+
+  .graph-node-group { cursor: grab; }
+  .graph-node-group.dragging { cursor: grabbing; }
+
+  .graph-node-circle {
+    fill: rgba(9, 15, 34, 0.92);
+    stroke: rgba(246, 241, 228, 0.25);
+    stroke-width: 1.6;
+    transition: stroke 0.2s ease, fill 0.2s ease;
+  }
+
+  .graph-node-group:hover .graph-node-circle,
+  .graph-node-group.selected .graph-node-circle {
+    stroke: var(--amber);
+    fill: rgba(232, 163, 61, 0.1);
+  }
+
+  .graph-node-seq {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    fill: #6B7499;
+    text-anchor: middle;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .graph-node-label {
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 600;
+    fill: #E7E9F5;
+    text-anchor: middle;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .graph-detail-panel {
+    display: none;
+    margin-top: 16px;
+    padding: 16px 18px;
+    background: rgba(246, 241, 228, 0.04);
+    border: 1px solid rgba(246, 241, 228, 0.1);
+    border-radius: 8px;
+    animation: rowReveal 0.3s ease;
+  }
+
+  .graph-detail-panel.open { display: block; }
+
+  .graph-detail-title {
+    font-family: var(--font-display);
+    font-size: 19px;
+    color: #FBF8F0;
+    margin-bottom: 4px;
+  }
+
+  .graph-detail-confidence {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--amber);
+    margin-bottom: 12px;
+  }
+
+  .graph-detail-body {
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: #C9D0E8;
+    margin-bottom: 14px;
+  }
+
+  .graph-detail-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  /* NLP intake box */
+  .nlp-box {
+    margin-bottom: 44px;
+  }
+
+  .nlp-box textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 18px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    background: var(--paper-raised);
+    font-family: var(--font-body);
+    font-size: 15.5px;
+    color: var(--ink);
+    resize: vertical;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .nlp-box textarea:focus {
+    outline: none;
+    border-color: var(--saffron);
+    box-shadow: 0 0 0 3px rgba(201, 105, 30, 0.12);
+  }
+
+  .nlp-input-wrap { position: relative; }
+
+  .voice-input-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--paper-raised);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease, transform 0.12s ease;
+  }
+
+  .voice-input-btn:hover { background: var(--saffron-soft); transform: scale(1.04); }
+
+  .voice-input-btn.listening {
+    background: var(--saffron);
+    border-color: var(--saffron);
+    animation: mic-pulse 1.2s infinite;
+  }
+
+  @keyframes mic-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(201, 105, 30, 0.5); }
+    70% { box-shadow: 0 0 0 14px rgba(201, 105, 30, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(201, 105, 30, 0); }
+  }
+
+  .nlp-extract-btn {
+    margin-top: 10px;
+    padding: 11px 22px;
+    background: var(--saffron);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-family: var(--font-body);
+    font-size: 14.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.12s ease;
+  }
+
+  .nlp-extract-btn:hover { background: var(--saffron-deep); transform: translateY(-1px); }
+
+  .voice-controls-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+
+  .voice-controls-row .nlp-extract-btn { margin-top: 0; }
+
+  .voice-lang-select {
+    padding: 9px 12px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--paper-raised);
+    font-family: var(--font-body);
+    font-size: 13.5px;
+    color: var(--ink);
+    cursor: pointer;
+  }
+
+  .voice-mute-toggle {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--paper-raised);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease;
+  }
+
+  .voice-mute-toggle:hover { background: var(--saffron-soft); }
+  .voice-mute-toggle.muted { opacity: 0.5; }
+
+  .nlp-notes {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .nlp-note-chip {
+    font-size: 12.5px;
+    font-family: var(--font-mono);
+    padding: 5px 11px;
+    background: #E3EFE8;
+    color: var(--green);
+    border-radius: 6px;
+  }
+
+  /* Voice fallback prompt */
+  .voice-bubble {
+    margin-top: 16px;
+    padding: 15px 18px;
+    background: var(--saffron-soft);
+    border: 1px solid var(--amber);
+    border-radius: 10px;
+    font-size: 14.5px;
+    color: #7A4A18;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    animation: fadeIn 0.25s ease;
+  }
+
+  .voice-bubble .icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+  .voice-replay-btn {
+    margin-left: auto;
+    flex-shrink: 0;
+    background: var(--amber);
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    padding: 5px 13px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--font-body);
+  }
+
+  .voice-replay-btn:hover { background: var(--saffron); }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .field-missing select,
+  .field-missing input {
+    border-bottom-color: var(--amber) !important;
+    box-shadow: 0 1.5px 0 0 var(--amber) !important;
+  }
+
+  .or-divider {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 36px 0;
+    color: var(--muted);
+    font-size: 13px;
+    font-family: var(--font-mono);
+  }
+
+  .or-divider::before, .or-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+
+  /* ---------- How it works — literal pipeline, paper zone ---------- */
+  section.how-it-works { padding: 88px 0 96px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+
+  .pipeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-top: 44px;
+    position: relative;
+  }
+
+  .pipeline::before {
+    content: '';
+    position: absolute;
+    left: 23px; top: 6px; bottom: 6px;
+    width: 1px;
+    background: var(--line);
+  }
+
+  .pipe-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 22px;
+    padding: 20px 0;
+    position: relative;
+  }
+
+  .pipe-node {
+    width: 47px; height: 47px;
+    border-radius: 50%;
+    border: 1.5px solid var(--line);
+    background: var(--paper-raised);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 15px;
+    color: var(--muted);
+    flex-shrink: 0;
+    z-index: 1;
+  }
+
+  .pipe-step.n1 .pipe-node,
+  .pipe-step.n2 .pipe-node,
+  .pipe-step.n3 .pipe-node,
+  .pipe-step.n4 .pipe-node,
+  .pipe-step.n5 .pipe-node { border-color: var(--saffron); color: var(--saffron); }
+
+  .pipe-text .pipe-title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 19px;
+    margin-bottom: 6px;
+    color: var(--ink);
+  }
+
+  .pipe-text .pipe-desc {
+    font-size: 14.5px;
+    color: var(--muted);
+    line-height: 1.65;
+    max-width: 52ch;
+  }
+
+  /* ---------- Model section — night-ops zone, real architecture facts ---------- */
+  section.model-section {
+    padding: 96px 0 100px;
+    background: radial-gradient(130% 110% at 85% 0%, #1B2A57 0%, #0D1730 50%, #090F22 100%);
+    color: #E7E9F5;
+  }
+
+  .spec-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin: 40px 0 52px;
+  }
+
+  @media (max-width: 780px) { .spec-row { grid-template-columns: repeat(2, 1fr); } }
+
+  .spec-card {
+    border: 1px solid rgba(246, 241, 228, 0.1);
+    border-radius: 8px;
+    padding: 18px 20px;
+    background: rgba(246, 241, 228, 0.04);
+  }
+
+  .spec-card .sc-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: #8891B5;
+    margin-bottom: 9px;
+    text-transform: uppercase;
+  }
+
+  .spec-card .sc-value {
+    font-family: var(--font-display);
+    font-size: 19px;
+    font-weight: 600;
+    color: #F1F2FA;
+  }
+
+  .layer-strip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+
+  .layer-chip {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    padding: 7px 13px;
+    border-radius: 20px;
+    background: rgba(232, 163, 61, 0.12);
+    border: 1px solid rgba(232, 163, 61, 0.3);
+    color: var(--amber);
+  }
+
+  .layer-chip.io { background: rgba(111, 207, 151, 0.12); border-color: rgba(111, 207, 151, 0.35); color: #6FCF97; }
+
+  .layer-arrow { color: #57628C; font-family: var(--font-mono); font-size: 13px; }
+
+  .model-note {
+    margin-top: 18px;
+    font-size: 13.5px;
+    color: #9AA3C4;
+    line-height: 1.7;
+    max-width: 60ch;
+  }
+
+  /* ---------- Tech stack — paper zone ---------- */
+  section.stack-section { padding: 88px 0 90px; }
+
+  .tech-list { display: flex; flex-direction: column; margin-top: 36px; border-top: 1px solid var(--line); }
+
+  .tech-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 22px 2px;
+    border-bottom: 1px solid var(--line);
+    transition: padding-left 0.25s ease, border-color 0.25s ease;
+  }
+
+  .tech-row:hover { padding-left: 12px; border-color: var(--saffron); }
+
+  .tech-row .t-name {
+    font-family: var(--font-display);
+    font-size: clamp(19px, 2.2vw, 25px);
+    font-weight: 600;
+    color: var(--ink);
+    transition: color 0.25s ease;
+  }
+
+  .tech-row:hover .t-name { color: var(--saffron); }
+
+  .tech-row .t-role {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+    text-align: right;
+    max-width: 34ch;
+  }
+
+  /* ---------- Dependency journey — sequential clearance lights ---------- */
+  .journey-wrap {
+    margin-bottom: 48px;
+  }
+
+  .journey-list {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .journey-item {
+    display: flex;
+    gap: 18px;
+    position: relative;
+    opacity: 0;
+    animation: journeyReveal 0.5s ease forwards;
+  }
+
+  @keyframes journeyReveal {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .journey-connector {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 28px;
+    flex-shrink: 0;
+  }
+
+  .journey-dot {
+    width: 13px; height: 13px;
+    border-radius: 50%;
+    background: rgba(232, 163, 61, 0.25);
+    margin-top: 24px;
+    flex-shrink: 0;
+    transition: background 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .journey-dot.lit {
+    background: #6FCF97;
+    box-shadow: 0 0 0 5px rgba(111, 207, 151, 0.18), 0 0 14px rgba(111, 207, 151, 0.5);
+  }
+
+  .journey-line {
+    flex: 1;
+    width: 2px;
+    background: rgba(246, 241, 228, 0.12);
+    min-height: 28px;
+  }
+
+  .journey-item:last-child .journey-line { display: none; }
+
+  .journey-card {
+    flex: 1;
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    background: rgba(246, 241, 228, 0.04);
+    border: 1px solid rgba(246, 241, 228, 0.09);
+    border-radius: 8px;
+    padding: 15px 18px;
+    margin-bottom: 16px;
+  }
+
+  .journey-seq {
+    font-family: var(--font-mono);
+    font-size: 22px;
+    font-weight: 500;
+    color: rgba(246, 241, 228, 0.18);
+    flex-shrink: 0;
+    line-height: 1;
+  }
+
+  .journey-step-label {
+    font-size: 11.5px;
+    font-family: var(--font-mono);
+    color: #8891B5;
+    margin-bottom: 4px;
+  }
+
+  .journey-name {
+    font-size: 15.5px;
+    font-weight: 600;
+    color: #F1F2FA;
+  }
+
+  .loading-state {
+    text-align: center;
+    padding: 32px 0;
+    color: var(--muted);
+    display: none;
+  }
+
+  .loading-state.visible { display: block; }
+
+  footer {
+    padding: 32px 0 60px;
+    border-top: 1px solid var(--line);
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* ---------- Boot / welcome sequence ---------- */
+  .boot-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(120% 140% at 50% 30%, #16224A 0%, #0D1730 55%, #06091A 100%);
+    transition: opacity 0.5s ease;
+  }
+
+  .boot-overlay.dismissed {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .boot-skip-btn {
+    position: absolute;
+    top: 24px;
+    right: 28px;
+    background: none;
+    border: 1px solid rgba(246, 241, 228, 0.2);
+    color: rgba(246, 241, 228, 0.6);
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    padding: 7px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease;
+  }
+
+  .boot-skip-btn:hover {
+    border-color: var(--amber);
+    color: var(--amber);
+  }
+
+  .boot-panel {
+    width: 92%;
+    max-width: 540px;
+    text-align: left;
+  }
+
+  .boot-mark {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    background: var(--amber);
+    color: var(--ink);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 21px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 32px;
+    box-shadow: 0 0 0 6px rgba(232, 163, 61, 0.12);
+    animation: bootMarkIn 0.6s ease;
+  }
+
+  @keyframes bootMarkIn {
+    from { opacity: 0; transform: scale(0.7); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .boot-log {
+    font-family: var(--font-mono);
+    font-size: 13.5px;
+    color: #8FE0AE;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    min-height: 100px;
+  }
+
+  .boot-log-line {
+    opacity: 0;
+    animation: bootLineIn 0.4s ease forwards;
+  }
+
+  .boot-log-line .boot-line-check {
+    color: #6FCF97;
+    margin-right: 8px;
+  }
+
+  @keyframes bootLineIn {
+    from { opacity: 0; transform: translateX(-6px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .boot-welcome {
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    margin-top: 8px;
+  }
+
+  .boot-welcome.shown { opacity: 1; transform: translateY(0); }
+
+  .boot-welcome h2 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 32px;
+    color: #FBF8F0;
+    margin: 0 0 18px;
+  }
+
+  .boot-welcome p {
+    font-size: 15.5px;
+    line-height: 1.6;
+    color: #C4CCE8;
+    max-width: 50ch;
+    margin: 0 0 14px;
+  }
+
+  .boot-welcome p strong { color: #F1F2FA; }
+
+  .boot-continue-btn {
+    margin-top: 18px;
+    padding: 13px 28px;
+    background: var(--amber);
+    color: var(--ink);
+    border: none;
+    border-radius: 6px;
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.12s ease;
+  }
+
+  .boot-continue-btn:hover {
+    background: #F2B85C;
+    transform: translateY(-1px);
+  }
+
+  body.boot-locked { overflow: hidden; }
+
+/* =========================================================
+   SIH PRESENTATION POLISH — visual layer
+   Keeps the existing application logic intact.
+   ========================================================= */
+:root{
+  --sih-bg:#07111f;
+  --sih-panel:#0c1a2c;
+  --sih-panel-2:#10233a;
+  --sih-cyan:#22d3ee;
+  --sih-blue:#3b82f6;
+  --sih-violet:#8b5cf6;
+  --sih-green:#34d399;
+  --sih-text:#f8fafc;
+  --sih-muted:#9fb0c7;
+  --sih-line:rgba(148,163,184,.16);
+  --sih-glow:rgba(34,211,238,.22);
+}
+
+/* Smoother overall rendering */
+html{scroll-behavior:smooth}
+body{
+  overflow-x:hidden;
+  background:
+    radial-gradient(circle at 8% 12%, rgba(59,130,246,.06), transparent 28%),
+    radial-gradient(circle at 90% 48%, rgba(139,92,246,.05), transparent 30%),
+    var(--paper);
+}
+::selection{background:rgba(34,211,238,.25);color:var(--ink)}
+
+.wrap-wide{max-width:1180px}
+.wrap{max-width:980px}
+
+/* Premium navigation */
+nav.topnav{
+  padding:12px clamp(18px,4vw,42px);
+  background:rgba(4,10,20,.78);
+  border-bottom:1px solid rgba(148,163,184,.12);
+  box-shadow:0 10px 35px rgba(0,0,0,.12);
+}
+nav.topnav.on-paper{
+  background:rgba(250,248,242,.90);
+  box-shadow:0 10px 28px rgba(13,23,48,.08);
+}
+.nav-brand .nav-mark,.mark,.boot-mark{
+  background:linear-gradient(135deg,var(--amber),#ffd166);
+  box-shadow:0 0 0 5px rgba(232,163,61,.10),0 8px 25px rgba(232,163,61,.16);
+}
+.nav-cta{
+  border-radius:999px;
+  padding:10px 18px;
+  background:linear-gradient(135deg,#ffd166,#f4a340);
+  box-shadow:0 5px 20px rgba(232,163,61,.20);
+}
+.nav-cta:hover{background:linear-gradient(135deg,#ffe08a,#f6ad51)}
+
+/* Hero: stronger contrast + more technical atmosphere */
+header.hero{
+  min-height:700px;
+  background:
+    radial-gradient(circle at 78% 30%, rgba(34,211,238,.11), transparent 24%),
+    radial-gradient(circle at 92% 70%, rgba(139,92,246,.14), transparent 28%),
+    radial-gradient(120% 140% at 15% 0%, #172e59 0%, #081425 52%, #040a14 100%);
+}
+.hero-overlay{
+  background:
+    linear-gradient(90deg,rgba(3,9,18,.97) 0%,rgba(4,11,22,.90) 38%,rgba(4,11,22,.56) 67%,rgba(4,11,22,.18) 100%);
+}
+.wrap.hero-inner{padding-top:118px;padding-bottom:105px}
+.eyebrow-row{margin-bottom:28px}
+.wordmark{
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  font-family:var(--font-mono);
+  font-size:12px;
+  color:#cbd5e1;
+}
+h1.headline{
+  max-width:900px;
+  font-size:clamp(44px,7vw,78px);
+  line-height:.99;
+  letter-spacing:-.035em;
+  text-shadow:0 10px 40px rgba(0,0,0,.28);
+}
+h1.headline::after{
+  content:"";
+  display:block;
+  width:82px;
+  height:4px;
+  margin-top:26px;
+  border-radius:999px;
+  background:linear-gradient(90deg,var(--sih-cyan),var(--sih-blue),var(--sih-violet));
+  box-shadow:0 0 22px rgba(34,211,238,.35);
+}
+.sub{
+  max-width:62ch;
+  color:#c1ccdf;
+  font-size:18px;
+  line-height:1.7;
+}
+.pain-quote{
+  border-left-color:var(--sih-cyan);
+  background:linear-gradient(90deg,rgba(34,211,238,.08),transparent);
+  padding:14px 20px;
+  border-radius:0 10px 10px 0;
+  color:#e8eef8;
+}
+.network-caption{
+  margin-top:42px;
+  flex-wrap:wrap;
+}
+.network-caption .layer-tag{
+  border:1px solid rgba(34,211,238,.22);
+  background:rgba(34,211,238,.07);
+  color:#a9dce5;
+}
+
+/* Paper sections: more modern card rhythm */
+section.how-it-works,section.stack-section{
+  background:
+    linear-gradient(180deg,#fbfaf6 0%,#f6f1e4 100%);
+}
+section.how-it-works{padding:105px 0 110px}
+.section-label{
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  font-size:11px;
+  font-weight:700;
+}
+h2.section-title{
+  font-size:clamp(30px,4vw,42px);
+  letter-spacing:-.025em;
+}
+.pipeline{
+  margin-top:50px;
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:14px;
+}
+.pipeline::before{display:none}
+.pipe-step{
+  display:block;
+  padding:0;
+}
+.pipe-node{
+  width:52px;height:52px;
+  margin-bottom:18px;
+  border-radius:15px;
+  background:#fff;
+  border:1px solid rgba(201,105,30,.22);
+  box-shadow:0 8px 25px rgba(13,23,48,.07);
+  color:var(--saffron);
+}
+.pipe-step .pipe-text{
+  padding:20px 18px 22px;
+  min-height:180px;
+  background:rgba(255,255,255,.72);
+  border:1px solid var(--line);
+  border-radius:16px;
+  box-shadow:0 10px 30px rgba(13,23,48,.05);
+  transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;
+}
+.pipe-step:hover .pipe-text{
+  transform:translateY(-5px);
+  border-color:rgba(201,105,30,.30);
+  box-shadow:0 18px 40px rgba(13,23,48,.10);
+}
+.pipe-text .pipe-title{font-size:18px}
+.pipe-text .pipe-desc{font-size:13.5px;line-height:1.65}
+
+@media(max-width:900px){
+  .pipeline{grid-template-columns:1fr 1fr}
+}
+@media(max-width:620px){
+  .pipeline{grid-template-columns:1fr}
+  .pipe-step .pipe-text{min-height:auto}
+}
+
+/* Application area */
+.form-section{
+  padding:92px 0 60px;
+}
+.nlp-box{
+  padding:26px;
+  border:1px solid rgba(13,23,48,.10);
+  border-radius:20px;
+  background:linear-gradient(145deg,#fff,#fbfaf7);
+  box-shadow:0 20px 55px rgba(13,23,48,.08);
+}
+.nlp-box textarea{
+  min-height:125px;
+  border:1px solid #d9d5ca;
+  border-radius:14px;
+  background:#fff;
+  padding:20px 58px 20px 20px;
+  box-shadow:inset 0 1px 2px rgba(13,23,48,.03);
+}
+.nlp-box textarea:focus{
+  border-color:var(--sih-blue);
+  box-shadow:0 0 0 4px rgba(59,130,246,.10);
+}
+.voice-input-btn{
+  width:42px;height:42px;
+  box-shadow:0 5px 16px rgba(13,23,48,.08);
+}
+.nlp-extract-btn{
+  border-radius:999px;
+  padding:11px 18px;
+  background:linear-gradient(135deg,#d97706,#c2410c);
+  box-shadow:0 7px 20px rgba(194,65,12,.16);
+}
+.grid-2{
+  gap:26px 30px;
+  padding:28px;
+  border:1px solid rgba(13,23,48,.08);
+  border-radius:20px;
+  background:rgba(255,255,255,.56);
+}
+.field select,.field input[type="number"]{
+  padding:14px 8px;
+  background:rgba(255,255,255,.65);
+}
+.field label{font-weight:600;color:#5d5a4e}
+.checks{
+  padding:18px 22px;
+  border-radius:14px;
+  background:#f0ede4;
+  border:1px solid var(--line);
+}
+.check-item{font-size:14px}
+button.predict-btn{
+  border-radius:12px;
+  padding:18px 22px;
+  background:linear-gradient(135deg,#0b1830,#142c50);
+  box-shadow:0 12px 30px rgba(13,23,48,.18);
+  position:relative;
+  overflow:hidden;
+}
+button.predict-btn::after{
+  content:"→";
+  float:right;
+  font-size:20px;
+  line-height:1;
+  color:var(--sih-cyan);
+}
+button.predict-btn:hover:not(:disabled){
+  background:linear-gradient(135deg,#0f2545,#183963);
+  box-shadow:0 15px 38px rgba(13,23,48,.24);
+}
+
+/* Results: make the judge's "aha" moment visually dominant */
+section.results,section.model-section{
+  background:
+    radial-gradient(circle at 88% 8%,rgba(34,211,238,.12),transparent 23%),
+    radial-gradient(circle at 12% 85%,rgba(139,92,246,.10),transparent 25%),
+    linear-gradient(145deg,#050c17 0%,#0a1728 52%,#081222 100%);
+}
+section.results{
+  padding:100px 0 120px;
+}
+.results-summary{
+  margin:24px 0 38px;
+  padding:24px 26px;
+  border:1px solid rgba(34,211,238,.18);
+  border-radius:18px;
+  background:linear-gradient(135deg,rgba(34,211,238,.08),rgba(59,130,246,.04));
+  box-shadow:0 15px 45px rgba(0,0,0,.16);
+  font-size:25px;
+}
+.approval-list{gap:10px}
+.approval-row{
+  padding:17px 20px;
+  border-radius:12px;
+  background:rgba(255,255,255,.045);
+  border-color:rgba(148,163,184,.15);
+  backdrop-filter:blur(8px);
+}
+.approval-row.required{
+  border-left:3px solid var(--sih-green);
+  box-shadow:inset 18px 0 30px rgba(52,211,153,.025);
+}
+.tag-required{
+  background:rgba(52,211,153,.12);
+  color:#6ee7b7;
+  border:1px solid rgba(52,211,153,.20);
+}
+.disclaimer{
+  border-radius:12px;
+  background:rgba(245,158,11,.07);
+  border-color:rgba(245,158,11,.22);
+}
+
+/* Journey cards */
+.journey-card{
+  padding:17px 20px;
+  border-radius:13px;
+  background:linear-gradient(100deg,rgba(255,255,255,.055),rgba(255,255,255,.025));
+  border-color:rgba(148,163,184,.15);
+  box-shadow:0 8px 25px rgba(0,0,0,.10);
+}
+.journey-dot.lit{
+  background:var(--sih-green);
+  box-shadow:0 0 0 5px rgba(52,211,153,.14),0 0 20px rgba(52,211,153,.40);
+}
+
+/* Model section: technical credibility */
+section.model-section{
+  padding:105px 0 115px;
+}
+.spec-row{gap:16px;margin:42px 0 55px}
+.spec-card{
+  min-height:125px;
+  border-radius:16px;
+  padding:20px;
+  background:linear-gradient(145deg,rgba(255,255,255,.075),rgba(255,255,255,.025));
+  border-color:rgba(148,163,184,.15);
+  box-shadow:0 12px 35px rgba(0,0,0,.12);
+  transition:transform .22s ease,border-color .22s ease;
+}
+.spec-card:hover{
+  transform:translateY(-4px);
+  border-color:rgba(34,211,238,.30);
+}
+.spec-card .sc-label{color:#7f93ad}
+.spec-card .sc-value{font-size:20px}
+.layer-chip{
+  background:rgba(139,92,246,.10);
+  border-color:rgba(139,92,246,.28);
+  color:#c4b5fd;
+}
+.layer-chip.io{
+  background:rgba(34,211,238,.10);
+  border-color:rgba(34,211,238,.30);
+  color:#67e8f9;
+}
+.model-note{color:#a7b5c9}
+
+/* Stack */
+section.stack-section{padding:105px 0 110px}
+.tech-list{margin-top:42px}
+.tech-row{
+  padding:25px 8px;
+}
+.tech-row:hover{
+  padding-left:16px;
+  background:rgba(255,255,255,.55);
+  border-color:rgba(201,105,30,.35);
+}
+.tech-row .t-name{font-size:clamp(19px,2.4vw,27px)}
+
+/* Boot screen: shorter-feeling, more competition-ready */
+.boot-overlay{
+  background:
+    radial-gradient(circle at 70% 30%,rgba(34,211,238,.10),transparent 25%),
+    radial-gradient(120% 140% at 50% 30%,#10284a 0%,#071321 55%,#030811 100%);
+}
+.boot-panel{max-width:650px}
+.boot-log{color:#8fe8c0}
+.boot-welcome h2{
+  font-size:clamp(32px,5vw,46px);
+  letter-spacing:-.03em;
+}
+.boot-continue-btn{
+  border-radius:999px;
+  padding:14px 30px;
+  background:linear-gradient(135deg,#ffd166,#f4a340);
+  box-shadow:0 10px 28px rgba(232,163,61,.20);
+}
+
+/* Accessibility / reduced motion */
+:focus-visible{
+  outline:3px solid rgba(34,211,238,.55);
+  outline-offset:3px;
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.01ms!important;
+    animation-iteration-count:1!important;
+    scroll-behavior:auto!important;
+    transition-duration:.01ms!important;
+  }
+}
+
+/* Mobile polish */
+@media(max-width:620px){
+  header.hero{min-height:650px}
+  .wrap.hero-inner{padding-top:110px}
+  h1.headline{font-size:clamp(42px,12vw,58px)}
+  .sub{font-size:16px}
+  .nlp-box,.grid-2{padding:20px}
+  .grid-2{grid-template-columns:1fr}
+  .spec-row{grid-template-columns:1fr}
+  .approval-row{gap:12px;align-items:flex-start}
+  .confidence{display:block;margin-left:0;margin-top:5px}
+}
+
+/* Tiny "SIH prototype" label */
+.sih-ribbon{
+  position:absolute;
+  top:18px;
+  right:18px;
+  z-index:3;
+  padding:7px 11px;
+  border:1px solid rgba(34,211,238,.25);
+  border-radius:999px;
+  background:rgba(4,10,20,.48);
+  color:#9eeaf2;
+  font:600 10px/1 var(--font-mono);
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  backdrop-filter:blur(8px);
+}
+
+
+/* =========================================================
+   UDYAMFLOW AI — SIH FINAL SHOWCASE LAYER
+   Premium product-demo / jury-presentation styling
+   ========================================================= */
+:root{
+  --uf-bg:#050b14;
+  --uf-bg2:#081525;
+  --uf-card:rgba(13,29,48,.72);
+  --uf-card-solid:#0d1c2e;
+  --uf-cyan:#39e7ff;
+  --uf-blue:#4d7cff;
+  --uf-purple:#a875ff;
+  --uf-lime:#55e6a5;
+  --uf-gold:#ffc95c;
+  --uf-white:#f7fbff;
+  --uf-muted:#9eb0c5;
+  --uf-border:rgba(148,163,184,.15);
+}
+
+/* Global polish */
+body{
+  background:
+    radial-gradient(900px 500px at 10% -10%,rgba(77,124,255,.08),transparent 65%),
+    radial-gradient(900px 500px at 100% 40%,rgba(57,231,255,.055),transparent 65%),
+    var(--paper);
+}
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:10000;
+  opacity:.035;
+  background-image:linear-gradient(rgba(255,255,255,.8) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(255,255,255,.8) 1px,transparent 1px);
+  background-size:48px 48px;
+  mask-image:linear-gradient(to bottom,black,transparent 80%);
+}
+
+/* Navigation becomes a floating glass command bar */
+nav.topnav{
+  margin:14px auto 0;
+  left:18px;right:18px;
+  width:min(1180px,calc(100% - 36px));
+  border:1px solid rgba(148,163,184,.16);
+  border-radius:18px;
+  padding:10px 14px;
+  background:rgba(4,10,19,.72);
+  box-shadow:0 18px 60px rgba(0,0,0,.22);
+}
+nav.topnav.on-paper{
+  background:rgba(250,248,242,.90);
+  border-color:rgba(13,23,48,.10);
+}
+.nav-links{gap:8px}
+.nav-links button.nav-link{
+  padding:9px 12px;
+  border-radius:9px;
+}
+.nav-links button.nav-link:hover,
+.nav-links button.nav-link.active{
+  background:rgba(57,231,255,.08);
+}
+nav.topnav.on-paper .nav-links button.nav-link:hover,
+nav.topnav.on-paper .nav-links button.nav-link.active{
+  background:rgba(201,105,30,.08);
+}
+
+/* Hero: cinematic + dashboard-like */
+header.hero{
+  min-height:760px;
+  isolation:isolate;
+  background:
+    radial-gradient(650px 450px at 75% 48%,rgba(57,231,255,.11),transparent 65%),
+    radial-gradient(500px 450px at 90% 80%,rgba(168,117,255,.13),transparent 70%),
+    linear-gradient(135deg,#07111f 0%,#06101d 45%,#030811 100%);
+}
+.hero::before{
+  content:"";
+  position:absolute;
+  width:460px;height:460px;
+  right:-140px;top:110px;
+  border:1px solid rgba(57,231,255,.10);
+  border-radius:50%;
+  box-shadow:0 0 0 45px rgba(57,231,255,.018),
+             0 0 0 90px rgba(57,231,255,.012);
+  animation:ufOrbit 12s linear infinite;
+  pointer-events:none;
+}
+.hero::after{
+  content:"";
+  position:absolute;
+  right:12%;top:21%;
+  width:6px;height:6px;border-radius:50%;
+  background:var(--uf-cyan);
+  box-shadow:0 0 20px 7px rgba(57,231,255,.35);
+  animation:ufBlink 2s ease-in-out infinite;
+}
+@keyframes ufOrbit{to{transform:rotate(360deg)}}
+@keyframes ufBlink{50%{opacity:.35;transform:scale(.65)}}
+.hero-overlay{
+  background:
+    linear-gradient(90deg,rgba(2,7,14,.98) 0%,rgba(3,9,17,.91) 35%,rgba(3,9,17,.60) 63%,rgba(3,9,17,.20) 100%);
+}
+.wrap.hero-inner{
+  max-width:1180px;
+  padding-top:145px;
+  padding-bottom:115px;
+}
+.eyebrow-row{
+  display:inline-flex;
+  padding:7px 12px 7px 7px;
+  border-radius:999px;
+  background:rgba(255,255,255,.045);
+  border:1px solid rgba(148,163,184,.15);
+  backdrop-filter:blur(12px);
+  margin-bottom:30px;
+}
+.eyebrow-row .mark{width:31px;height:31px;border-radius:50%}
+h1.headline{
+  max-width:950px;
+  font-size:clamp(50px,7.2vw,88px);
+  line-height:.96;
+  letter-spacing:-.052em;
+}
+h1.headline::first-line{color:#fff}
+h1.headline::after{
+  width:115px;height:5px;margin-top:30px;
+  background:linear-gradient(90deg,var(--uf-cyan),var(--uf-blue),var(--uf-purple));
+}
+.sub{
+  max-width:65ch;
+  font-size:18px;
+  color:#b7c6d8;
+}
+.pain-quote{
+  max-width:570px;
+  margin-top:32px;
+  border-left:0;
+  padding:16px 20px;
+  border:1px solid rgba(57,231,255,.14);
+  border-radius:13px;
+  background:linear-gradient(100deg,rgba(57,231,255,.07),rgba(77,124,255,.025),transparent);
+}
+.network-caption{
+  margin-top:34px;
+  padding:10px 13px;
+  width:max-content;
+  max-width:100%;
+  border:1px solid rgba(148,163,184,.12);
+  border-radius:999px;
+  background:rgba(255,255,255,.035);
+  backdrop-filter:blur(10px);
+}
+.status-dot{
+  background:var(--uf-lime);
+  box-shadow:0 0 0 4px rgba(85,230,165,.12),0 0 18px rgba(85,230,165,.35);
+}
+.network-caption .layer-tag{
+  border-radius:999px;
+  background:rgba(57,231,255,.07);
+  border:1px solid rgba(57,231,255,.15);
+}
+
+/* Hero side information panel — gives judges immediate product comprehension */
+.hero::marker{display:none}
+.sih-ribbon{
+  top:104px;
+  right:clamp(20px,6vw,90px);
+  padding:8px 13px;
+  background:rgba(4,10,18,.58);
+  border-color:rgba(57,231,255,.24);
+  color:#a8f4ff;
+}
+
+/* Process becomes a visual product flow */
+section.how-it-works{
+  position:relative;
+  padding:115px 0 125px;
+}
+section.how-it-works::before{
+  content:"01 / 05";
+  position:absolute;
+  top:54px;right:5%;
+  font:600 10px var(--font-mono);
+  letter-spacing:.18em;
+  color:rgba(13,23,48,.28);
+}
+.pipeline{
+  gap:16px;
+}
+.pipe-step .pipe-text{
+  position:relative;
+  overflow:hidden;
+  min-height:210px;
+  border-radius:20px;
+  background:linear-gradient(145deg,#fff,#f8f6ef);
+}
+.pipe-step .pipe-text::before{
+  content:"";
+  position:absolute;
+  top:0;left:0;right:0;
+  height:3px;
+  background:linear-gradient(90deg,var(--saffron),var(--amber));
+  opacity:.75;
+}
+.pipe-step:nth-child(2) .pipe-text::before{background:linear-gradient(90deg,var(--uf-blue),#6ea2ff)}
+.pipe-step:nth-child(3) .pipe-text::before{background:linear-gradient(90deg,var(--uf-purple),#c7a8ff)}
+.pipe-step:nth-child(4) .pipe-text::before{background:linear-gradient(90deg,var(--uf-cyan),#8cf5ff)}
+.pipe-step:nth-child(5) .pipe-text::before{background:linear-gradient(90deg,var(--uf-lime),#9af4cb)}
+.pipe-node{
+  position:relative;
+  z-index:2;
+  border-radius:14px;
+  font-weight:700;
+  background:#fff;
+}
+
+/* Application section gets a "control room" feeling */
+section.form-section{
+  position:relative;
+  padding:100px 0 75px;
+}
+section.form-section::before{
+  content:"LIVE INPUT";
+  position:absolute;
+  top:48px;right:5%;
+  font:600 10px var(--font-mono);
+  letter-spacing:.18em;
+  color:rgba(13,23,48,.30);
+}
+.nlp-box{
+  position:relative;
+  border-radius:24px;
+  padding:30px;
+  background:
+    radial-gradient(circle at 100% 0%,rgba(57,231,255,.045),transparent 35%),
+    linear-gradient(145deg,#fff,#faf8f2);
+  box-shadow:0 28px 70px rgba(13,23,48,.11);
+}
+.nlp-box::before{
+  content:"AI INTAKE";
+  position:absolute;
+  top:20px;right:22px;
+  font:600 9px var(--font-mono);
+  letter-spacing:.16em;
+  color:#8b8a82;
+}
+.nlp-box textarea{
+  min-height:145px;
+  font-size:16px;
+  line-height:1.65;
+}
+.voice-input-btn{
+  border-color:rgba(13,23,48,.12);
+  transition:all .2s ease;
+}
+.voice-input-btn:hover{
+  box-shadow:0 0 0 5px rgba(57,231,255,.08),0 8px 20px rgba(13,23,48,.10);
+}
+.grid-2{
+  position:relative;
+  margin-top:8px;
+  border-radius:24px;
+  background:rgba(255,255,255,.66);
+  box-shadow:0 20px 55px rgba(13,23,48,.055);
+}
+.grid-2::before{
+  content:"BUSINESS PROFILE";
+  position:absolute;
+  top:17px;right:24px;
+  font:600 9px var(--font-mono);
+  letter-spacing:.16em;
+  color:#9a9689;
+}
+.field select,.field input[type="number"]{
+  border-bottom-width:2px;
+}
+.checks{
+  margin-top:26px;
+  background:linear-gradient(100deg,#f1eee6,#f8f5ee);
+}
+button.predict-btn{
+  margin-top:30px;
+  min-height:62px;
+  border-radius:14px;
+  font-size:16px;
+  letter-spacing:.01em;
+  background:linear-gradient(110deg,#071427,#102b4c 55%,#112d55);
+}
+button.predict-btn::after{font-size:23px}
+.loading-state{
+  padding:25px;
+  border-radius:14px;
+  background:rgba(13,23,48,.035);
+}
+
+/* Results = the "wow" section */
+section.results{
+  position:relative;
+  overflow:hidden;
+  padding:115px 0 135px;
+}
+section.results::before{
+  content:"PREDICTION OUTPUT";
+  position:absolute;
+  top:48px;right:5%;
+  font:600 10px var(--font-mono);
+  letter-spacing:.18em;
+  color:rgba(167,190,215,.35);
+}
+section.results::after{
+  content:"";
+  position:absolute;
+  width:520px;height:520px;
+  right:-250px;bottom:-250px;
+  border-radius:50%;
+  border:1px solid rgba(57,231,255,.09);
+  box-shadow:0 0 0 55px rgba(57,231,255,.015),0 0 0 110px rgba(57,231,255,.01);
+  pointer-events:none;
+}
+.results-summary{
+  position:relative;
+  border-radius:20px;
+  padding:28px 30px;
+  background:
+    linear-gradient(120deg,rgba(57,231,255,.09),rgba(77,124,255,.055) 48%,rgba(168,117,255,.055));
+  border:1px solid rgba(57,231,255,.20);
+}
+.results-summary::before{
+  content:"AI ASSESSMENT";
+  display:block;
+  margin-bottom:9px;
+  font:600 9px var(--font-mono);
+  letter-spacing:.18em;
+  color:#72d9e6;
+}
+.approval-row{
+  position:relative;
+  overflow:hidden;
+  min-height:62px;
+  border-radius:14px;
+  background:linear-gradient(100deg,rgba(255,255,255,.065),rgba(255,255,255,.025));
+}
+.approval-row.required::after{
+  content:"";
+  position:absolute;
+  top:0;bottom:0;left:0;
+  width:1px;
+  background:linear-gradient(180deg,var(--uf-lime),transparent);
+}
+.tag-required{
+  border-radius:999px;
+  padding:5px 11px;
+  color:#7df0ba;
+}
+.tag-not-required{border-radius:999px}
+.journey-card{
+  border-radius:15px;
+  transition:transform .2s ease,border-color .2s ease,background .2s ease;
+}
+.journey-card:hover{
+  transform:translateX(5px);
+  border-color:rgba(57,231,255,.25);
+  background:rgba(57,231,255,.045);
+}
+.journey-seq{color:rgba(57,231,255,.28)}
+.disclaimer{
+  position:relative;
+  z-index:2;
+}
+
+/* Model / architecture section */
+section.model-section{
+  position:relative;
+  overflow:hidden;
+}
+section.model-section::before{
+  content:"MODEL / ARCHITECTURE";
+  position:absolute;
+  top:50px;right:5%;
+  font:600 10px var(--font-mono);
+  letter-spacing:.18em;
+  color:rgba(167,190,215,.30);
+}
+.spec-card{
+  position:relative;
+  overflow:hidden;
+  min-height:145px;
+  border-radius:18px;
+}
+.spec-card::after{
+  content:"";
+  position:absolute;
+  width:80px;height:80px;
+  right:-35px;bottom:-35px;
+  border-radius:50%;
+  border:1px solid rgba(57,231,255,.10);
+}
+.spec-card .sc-value{
+  font-size:21px;
+}
+.layer-strip{
+  padding:20px;
+  border:1px solid rgba(148,163,184,.11);
+  border-radius:18px;
+  background:rgba(255,255,255,.025);
+}
+.layer-chip{
+  min-width:60px;
+  text-align:center;
+  border-radius:999px;
+  font-weight:600;
+}
+.model-note{
+  padding-left:16px;
+  border-left:2px solid rgba(57,231,255,.28);
+}
+
+/* Stack section */
+section.stack-section{
+  position:relative;
+}
+section.stack-section::before{
+  content:"ENGINEERING";
+  position:absolute;
+  top:48px;right:5%;
+  font:600 10px var(--font-mono);
+  letter-spacing:.18em;
+  color:rgba(13,23,48,.28);
+}
+.tech-row{
+  position:relative;
+  border-radius:10px;
+}
+.tech-row:hover{
+  padding-left:18px;
+  padding-right:18px;
+  border-color:rgba(57,231,255,.25);
+  background:linear-gradient(90deg,rgba(57,231,255,.045),transparent);
+}
+.tech-row .t-role{
+  transition:color .2s ease;
+}
+.tech-row:hover .t-role{color:#4f6f8e}
+
+/* Footer */
+footer{
+  padding-top:28px;
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:.02em;
+}
+
+/* Boot: premium command-center intro */
+.boot-overlay{
+  background:
+    radial-gradient(700px 500px at 75% 25%,rgba(57,231,255,.08),transparent 65%),
+    radial-gradient(700px 500px at 20% 80%,rgba(168,117,255,.08),transparent 65%),
+    #030811;
+}
+.boot-overlay::before{
+  content:"SIH / 2026  •  SYSTEM INITIALIZATION";
+  position:absolute;
+  top:28px;left:32px;
+  color:rgba(174,199,223,.38);
+  font:600 9px var(--font-mono);
+  letter-spacing:.18em;
+}
+.boot-panel{
+  max-width:700px;
+}
+.boot-log{
+  padding:18px 20px;
+  border:1px solid rgba(148,163,184,.12);
+  border-radius:14px;
+  background:rgba(255,255,255,.025);
+}
+.boot-welcome{
+  margin-top:18px;
+}
+.boot-welcome h2{
+  font-size:clamp(36px,5vw,52px);
+  letter-spacing:-.04em;
+}
+.boot-continue-btn{
+  min-width:150px;
+  border-radius:999px;
+}
+
+/* Small screens */
+@media(max-width:900px){
+  nav.topnav{
+    left:10px;right:10px;width:calc(100% - 20px);
+  }
+  .hero::before{right:-280px}
+  .sih-ribbon{top:92px;right:20px}
+}
+@media(max-width:620px){
+  body::before{opacity:.018}
+  nav.topnav{margin-top:8px;border-radius:14px}
+  .hero::before{display:none}
+  header.hero{min-height:700px}
+  .wrap.hero-inner{padding-top:128px}
+  h1.headline{font-size:clamp(45px,13vw,62px)}
+  .network-caption{border-radius:14px}
+  .nlp-box{padding:22px}
+  .grid-2{padding:22px}
+  .spec-card{min-height:120px}
+}
+
+/* Smooth reveal enhancement */
+.reveal.in-view{
+  filter:blur(0);
+}
+.reveal{
+  filter:blur(2px);
+}
+
+
+.hero-system-panel{
+  position:absolute;
+  z-index:2;
+  right:clamp(24px,6vw,95px);
+  top:50%;
+  transform:translateY(-25%);
+  width:270px;
+  padding:20px;
+  border:1px solid rgba(57,231,255,.18);
+  border-radius:18px;
+  background:linear-gradient(145deg,rgba(11,28,46,.72),rgba(5,13,24,.58));
+  box-shadow:0 25px 70px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.05);
+  backdrop-filter:blur(16px);
+}
+.hsp-top{
+  font:600 9px var(--font-mono);
+  letter-spacing:.16em;
+  color:#7f9ab4;
+}
+.hsp-dot{
+  display:inline-block;width:7px;height:7px;border-radius:50%;
+  margin-right:7px;background:var(--uf-lime);
+  box-shadow:0 0 12px rgba(85,230,165,.6);
+}
+.hsp-main{
+  margin:12px 0 18px;
+  font:700 29px/1 var(--font-mono);
+  letter-spacing:.04em;
+  color:#eafff5;
+}
+.hsp-grid{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:9px 14px;
+  padding-top:15px;
+  border-top:1px solid rgba(148,163,184,.12);
+}
+.hsp-grid span{
+  font:600 9px var(--font-mono);
+  color:#71879e;
+  letter-spacing:.12em;
+}
+.hsp-grid b{
+  font:600 10px var(--font-mono);
+  color:#8eeaf5;
+}
+@media(max-width:900px){
+  .hero-system-panel{display:none}
+}
+
+
+/* =========================================================
+   SIH OPENING EXPERIENCE — STARTING PAGE
+   Full-screen premium launch screen before the main app.
+   ========================================================= */
+.boot-overlay{
+  background:
+    radial-gradient(900px 650px at 78% 18%,rgba(57,231,255,.10),transparent 62%),
+    radial-gradient(800px 600px at 18% 86%,rgba(167,123,255,.09),transparent 64%),
+    linear-gradient(135deg,#02050b 0%,#06101d 48%,#030811 100%);
+  overflow:hidden;
+}
+.boot-overlay::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(rgba(59,231,255,.045) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(59,231,255,.045) 1px,transparent 1px);
+  background-size:54px 54px;
+  mask-image:radial-gradient(circle at center,#000 0%,transparent 78%);
+  pointer-events:none;
+}
+.boot-overlay::after{
+  content:"";
+  position:absolute;
+  width:560px;height:560px;
+  left:-290px;bottom:-290px;
+  border:1px solid rgba(59,231,255,.12);
+  border-radius:50%;
+  box-shadow:
+    0 0 0 55px rgba(59,231,255,.018),
+    0 0 0 110px rgba(59,231,255,.012);
+  pointer-events:none;
+}
+.boot-skip-btn{
+  top:25px;
+  right:30px;
+  z-index:5;
+  border:1px solid rgba(148,163,184,.20);
+  border-radius:999px;
+  padding:8px 14px;
+  background:rgba(255,255,255,.035);
+  backdrop-filter:blur(10px);
+  color:#90a5ba;
+}
+.boot-skip-btn:hover{
+  border-color:rgba(59,231,255,.40);
+  color:#71edff;
+}
+.boot-panel{
+  position:relative;
+  z-index:3;
+  width:min(900px,90%);
+  max-width:900px;
+  text-align:center;
+  padding:40px 20px;
+}
+.boot-mark{
+  width:72px;height:72px;
+  margin:0 auto 25px;
+  border-radius:20px;
+  background:linear-gradient(135deg,#4ceaff,#557aff);
+  color:#03101b;
+  font-size:31px;
+  box-shadow:
+    0 0 0 8px rgba(59,231,255,.055),
+    0 0 65px rgba(59,231,255,.18);
+  animation:ufBootMark .8s cubic-bezier(.16,.8,.24,1) both;
+}
+@keyframes ufBootMark{
+  from{opacity:0;transform:translateY(15px) scale(.78)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+.boot-log{
+  width:min(560px,100%);
+  margin:0 auto;
+  min-height:82px;
+  padding:15px 18px;
+  border:1px solid rgba(148,163,184,.12);
+  border-radius:14px;
+  background:rgba(255,255,255,.025);
+  text-align:left;
+  box-shadow:inset 0 1px rgba(255,255,255,.035);
+}
+.boot-log-line{
+  color:#73e8b4;
+  font-size:11.5px;
+}
+.boot-welcome{
+  margin-top:30px;
+}
+.boot-welcome h2{
+  margin-bottom:13px;
+  font-family:var(--font-display);
+  font-size:clamp(43px,7vw,74px);
+  line-height:.96;
+  letter-spacing:-.055em;
+  color:#f7fbff;
+  text-shadow:0 18px 55px rgba(0,0,0,.35);
+}
+.boot-welcome p{
+  max-width:650px;
+  margin:0 auto 26px;
+  color:#9db0c5;
+  font-size:16px;
+  line-height:1.7;
+}
+.boot-welcome p::after{
+  content:"  •  AI-powered industrial approval intelligence";
+  color:#52e6ff;
+}
+.boot-continue-btn{
+  position:relative;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.22);
+  border-radius:999px;
+  padding:14px 25px;
+  background:linear-gradient(135deg,#ffd773,#ffab3d);
+  color:#07101c;
+  font-weight:700;
+  box-shadow:0 12px 38px rgba(255,184,77,.18);
+}
+.boot-continue-btn::after{
+  content:"→";
+  margin-left:12px;
+  font-size:18px;
+}
+.boot-continue-btn:hover{
+  transform:translateY(-2px);
+  box-shadow:0 16px 45px rgba(255,184,77,.28);
+}
+.boot-continue-btn:active{transform:translateY(0)}
+
+/* Opening-page HUD labels */
+.boot-panel::before{
+  content:"SMART INDIA HACKATHON  •  SYSTEM DEMO";
+  display:block;
+  margin-bottom:25px;
+  color:rgba(157,190,214,.48);
+  font:600 9px var(--font-mono);
+  letter-spacing:.19em;
+}
+.boot-panel::after{
+  content:"SECURE SESSION  /  AI ENGINE READY  /  v1.0";
+  display:block;
+  margin:24px auto 0;
+  color:rgba(157,190,214,.30);
+  font:500 8px var(--font-mono);
+  letter-spacing:.16em;
+}
+@media(max-width:620px){
+  .boot-panel{padding-top:55px}
+  .boot-mark{width:60px;height:60px;font-size:26px}
+  .boot-welcome h2{font-size:46px}
+  .boot-welcome p::after{display:none}
+  .boot-skip-btn{top:17px;right:17px}
+}
+
+
+.hero-system-panel{
+  position:absolute;
+  z-index:3;
+  right:clamp(28px,6vw,95px);
+  top:52%;
+  transform:translateY(-30%);
+  width:315px;
+  padding:22px;
+  border:1px solid rgba(59,231,255,.18);
+  border-radius:20px;
+  background:linear-gradient(145deg,rgba(10,29,48,.72),rgba(3,10,19,.62));
+  box-shadow:0 28px 80px rgba(0,0,0,.36),inset 0 1px rgba(255,255,255,.05);
+  backdrop-filter:blur(18px);
+}
+.hsp-top{
+  font:600 9px var(--font-mono);
+  letter-spacing:.17em;
+  color:#7892ab;
+}
+.hsp-dot{
+  display:inline-block;width:7px;height:7px;border-radius:50%;
+  margin-right:7px;background:#45e6a5;
+  box-shadow:0 0 15px rgba(69,230,165,.65);
+}
+.hsp-main{
+  margin:13px 0 20px;
+  font:700 31px/1 var(--font-mono);
+  letter-spacing:.05em;
+  color:#eafff5;
+}
+.hsp-grid{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:11px 16px;
+  padding-top:16px;
+  border-top:1px solid rgba(148,163,184,.12);
+}
+.hsp-grid span{
+  font:600 9px var(--font-mono);
+  color:#70879e;
+  letter-spacing:.12em;
+}
+.hsp-grid b{
+  font:600 9px var(--font-mono);
+  color:#8cecf8;
+}
+@media(max-width:900px){.hero-system-panel{display:none}}
+
+</style>
+
+<style id="compact-typography">
+/* Compact SIH jury typography */
+:root{
+  --type-scale: .88;
+}
+body{font-size:14px;}
+h1,h2,h3,h4{letter-spacing:-.02em;}
+.hero h1{
+  font-size:clamp(42px,5.2vw,78px) !important;
+  line-height:1.02 !important;
+}
+.hero .eyebrow,
+.hero .hero-kicker{font-size:11px !important;}
+.hero p,
+.hero .hero-subtitle{
+  font-size:15px !important;
+  line-height:1.55 !important;
+  max-width:620px;
+}
+.section-title,
+section h2{
+  font-size:clamp(28px,3.1vw,46px) !important;
+  line-height:1.08 !important;
+}
+section h3{font-size:20px !important;}
+section p{font-size:13.5px;line-height:1.55;}
+.nav-links a,.nav a{font-size:12px !important;}
+.brand,.logo-text{font-size:14px !important;}
+.btn,.button,.cta,.continue-btn{
+  font-size:12px !important;
+  padding:11px 18px !important;
+}
+.hero-hud,.hud,.status-panel{
+  font-size:11px !important;
+}
+.hero-hud h4,.hud h4,.status-panel h4{
+  font-size:12px !important;
+}
+.hero-hud .value,.hud .value,.status-panel .value{
+  font-size:16px !important;
+}
+.card h3,.feature-card h3,.result-card h3{
+  font-size:18px !important;
+}
+.card .metric,.result-card .metric{
+  font-size:25px !important;
+}
+input,textarea,select{
+  font-size:13px !important;
+}
+label{
+  font-size:11px !important;
+}
+.boot-overlay .boot-title,
+.boot-overlay h1{
+  font-size:clamp(34px,5vw,64px) !important;
+  line-height:1.05 !important;
+}
+.boot-overlay .boot-subtitle,
+.boot-overlay p{
+  font-size:14px !important;
+}
+.boot-overlay .boot-meta,
+.boot-overlay .boot-status{
+  font-size:10px !important;
+}
+@media (max-width:700px){
+  body{font-size:13px;}
+  .hero h1{font-size:40px !important;}
+  .hero p,.hero .hero-subtitle{font-size:14px !important;}
+  .section-title,section h2{font-size:30px !important;}
+  section h3{font-size:18px !important;}
+  .card h3,.feature-card h3,.result-card h3{font-size:16px !important;}
+  .boot-overlay .boot-title,.boot-overlay h1{font-size:34px !important;}
+}
+</style>
+
+
+<style id="scrollable-start-page">
+/* Allow the SIH opening screen to scroll naturally on smaller screens */
+html, body{
+  overflow-x:hidden !important;
+}
+.boot-overlay{
+  overflow-y:auto !important;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-y:auto;
+  max-height:100vh;
+}
+.boot-overlay .boot-content,
+.boot-overlay .boot-inner,
+.boot-overlay .boot-panel{
+  min-height:100vh;
+}
+@media (max-height:750px){
+  .boot-overlay{
+    align-items:flex-start !important;
+  }
+}
+</style>
+<script id="scrollable-start-page-fix">
+document.addEventListener("DOMContentLoaded", function () {
+  const boot = document.querySelector(".boot-overlay");
+  if (!boot) return;
+
+  // Ensure the opening page itself can scroll when its content exceeds the viewport.
+  boot.style.overflowY = "auto";
+  boot.style.webkitOverflowScrolling = "touch";
+
+  // Keep wheel/touch scrolling inside the opening page instead of locking the body.
+  boot.addEventListener("wheel", function(e){
+    if (boot.scrollHeight > boot.clientHeight) e.stopPropagation();
+  }, {passive:true});
+});
+</script>
+
+
+
+<script id="welcome-voice-script">
+(function(){
+  function initWelcomeVoice(){
+    const boot = document.querySelector('.boot-overlay');
+    if(!boot || !('speechSynthesis' in window)) return;
+
+    const synth = window.speechSynthesis;
+    let started = false;
+
+    // One continuous welcome message — a single speech utterance, not two sounds.
+    const text =
+       function femaleVoice(){
+      const voices = synth.getVoices();
+      const english = voices.filter(v =>
+        /^en(-|_)/i.test(v.lang) || /english/i.test(v.name)
+      );
+      const female = /female|woman|zira|samantha|karen|moira|tessa|ava|aria|jenny|sonia|libby|susan|hazel|veena|raveena|heera|neerja/i;
+
+      return english.find(v => female.test(v.name)) ||
+             voices.find(v => female.test(v.name)) ||
+             english.find(v => /IN|India/i.test(v.lang + " " + v.name)) ||
+             english[0] || voices[0] || null;
+    }
+
+    function speakOnce(){
+      if(started) return;
+      started = true;
+      try{
+        synth.cancel();
+
+        const u = new SpeechSynthesisUtterance(text);
+        const v = femaleVoice();
+
+        if(v){
+          u.voice = v;
+          u.lang = v.lang || "en-IN";
+        } else {
+          u.lang = "en-IN";
+        }
+
+        // Smooth, natural female AI-style delivery.
+        u.rate = 0.88;
+        u.pitch = 1.10;
+        u.volume = 1;
+
+        // Keep the entire welcome as one continuous speech sequence.
+        synth.speak(u);
+      }catch(e){
+        started = false;
+      }
+    }
+
+    // Try immediately when the starting page opens.
+    setTimeout(speakOnce, 250);
+
+    // If the browser exposes voices slightly later, retry the SAME single
+    // utterance only if playback has not started.
+    if("onvoiceschanged" in synth){
+      synth.addEventListener("voiceschanged", function(){
+        if(!started) setTimeout(speakOnce, 100);
+      }, {once:true});
+    }
+
+    // iOS/Safari autoplay fallback: first user interaction starts the same
+    // single continuous welcome if autoplay was blocked.
+    function unlock(){
+      if(!started) speakOnce();
+    }
+    document.addEventListener("pointerdown", unlock, {once:true, capture:true});
+    document.addEventListener("touchstart", unlock, {once:true, capture:true});
+    document.addEventListener("keydown", unlock, {once:true, capture:true});
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", initWelcomeVoice);
+  }else{
+    initWelcomeVoice();
+  }
+})();
+</script>
+
+</head>
+<body>
+
+<div id="boot-overlay" class="boot-overlay">
+  <button type="button" id="boot-skip-btn" class="boot-skip-btn">Skip intro</button>
+  <div class="boot-panel">
+    <div class="boot-mark">U</div>
+    <div class="boot-log" id="boot-log"></div>
+    <div class="boot-welcome" id="boot-welcome">
+      <h2>Welcome to UdyamFlow AI.</h2>
+      <p>This is <strong>UdyamFlow AI</strong> — a base prototype built for Chandigarh University's Tekathon, solving <strong>SIH26130: the Intelligent Industrial Approval System</strong>.</p>
+      <p>Describe any industrial business in plain language, and I'll tell you exactly which licenses, NOCs, and registrations it needs — and in what order — before a single brick gets laid.</p>
+      <button type="button" id="boot-continue-btn" class="boot-continue-btn">Continue</button>
+    </div>
+  </div>
+</div>
+
+<nav class="topnav" id="topnav">
+  <button type="button" class="nav-brand" data-scroll="overview">
+    <span class="nav-mark">U</span> UdyamFlow AI
+  </button>
+  <div class="nav-links">
+    <button type="button" class="nav-link" data-scroll="overview">Overview</button>
+    <button type="button" class="nav-link" data-scroll="how-it-works">How it works</button>
+    <button type="button" class="nav-link" data-scroll="apply">Apply</button>
+    <button type="button" class="nav-link" data-scroll="results-section">Journey</button>
+    <button type="button" class="nav-link" data-scroll="model">Model</button>
+    <button type="button" class="nav-link" data-scroll="stack">Stack</button>
+  </div>
+  <button type="button" class="nav-cta" data-scroll="apply">Check my approvals</button>
+</nav>
+
+<header class="hero" id="overview">
+  <div class="sih-ribbon">SIH · Intelligent Approval System</div>
+  <div class="network-hero" id="network-hero"></div>
+  <div class="hero-overlay"></div>
+  <div class="hero-system-panel" aria-hidden="true">
+    <div class="hsp-top"><span class="hsp-dot"></span> ENGINE STATUS</div>
+    <div class="hsp-main">ONLINE</div>
+    <div class="hsp-grid">
+      <span>INPUT</span><b>PROFILE</b>
+      <span>MODEL</span><b>ANN</b>
+      <span>OUTPUT</span><b>12 CHECKS</b>
+    </div>
+  </div>
+
+  <div class="wrap hero-inner">
+    <div class="eyebrow-row">
+      <div class="mark">U</div>
+      <div class="wordmark">UdyamFlow AI</div>
+    </div>
+    <h1 class="headline">Know your approvals before you build the factory.</h1>
+    <p class="sub">Describe your proposed industrial business and get a predicted list of the licenses, NOCs, and registrations you'll likely need — built for Punjab's regulatory landscape.</p>
+    <p class="pain-quote">"Exactly which approvals do I need, and what should I do next?"</p>
+    <div class="network-caption">
+      <span class="status-dot"></span>
+      <span>Live view — Approval Intelligence Engine (ANN)</span>
+      <span class="layer-tag">Input · 256 · 128 · 64 · Output</span>
+    </div>
+  </div>
+</header>
+
+<section class="how-it-works" id="how-it-works">
+  <div class="wrap-wide">
+    <div class="section-label">Process</div>
+    <h2 class="section-title">From a sentence to a clearance list</h2>
+    <div class="pipeline">
+      <div class="pipe-step n1 reveal">
+        <div class="pipe-node">01</div>
+        <div class="pipe-text">
+          <div class="pipe-title">Describe the business</div>
+          <div class="pipe-desc">Type or speak a plain-language description — district, sector, investment, headcount, whatever you know. No form-filling required to start.</div>
+        </div>
+      </div>
+      <div class="pipe-step n2 reveal">
+        <div class="pipe-node">02</div>
+        <div class="pipe-text">
+          <div class="pipe-title">NLP extraction</div>
+          <div class="pipe-desc">A rule-based extractor pulls investment, employee count, district, sector and hazard flags out of the free text, with unit-aware parsing for power, land and water.</div>
+        </div>
+      </div>
+      <div class="pipe-step n3 reveal">
+        <div class="pipe-node">03</div>
+        <div class="pipe-text">
+          <div class="pipe-title">Gaps get flagged, not guessed</div>
+          <div class="pipe-desc">Anything the extractor couldn't find stays visibly blank and is called out by voice — in English, Hindi or Punjabi — instead of silently defaulting.</div>
+        </div>
+      </div>
+      <div class="pipe-step n4 reveal">
+        <div class="pipe-node">04</div>
+        <div class="pipe-text">
+          <div class="pipe-title">ANN forward pass</div>
+          <div class="pipe-desc">The completed profile is preprocessed and pushed through a trained neural network that scores twelve licenses, NOCs and registrations independently.</div>
+        </div>
+      </div>
+      <div class="pipe-step n5 reveal">
+        <div class="pipe-node">05</div>
+        <div class="pipe-text">
+          <div class="pipe-title">Dependency-ordered journey</div>
+          <div class="pipe-desc">Required approvals are arranged into the realistic sequence a business would pursue them in — not just a flat list of yes/no results.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+  <section class="form-section" id="apply">
+    <div class="section-label">Step 1</div>
+    <h2 class="section-title">Tell us about your business</h2>
+
+    <div class="nlp-box">
+      <label for="nlp-input" style="display:block; font-size:13.5px; color:var(--muted); margin-bottom:8px;">
+        Describe your business in plain language, by typing or speaking — our NLP engine will auto-fill the form below
+      </label>
+      <div class="nlp-input-wrap">
+        <textarea id="nlp-input" placeholder="e.g. I want to start a ₹5 crore food processing factory in Amritsar with around 80 employees"></textarea>
+        <button type="button" id="voice-input-btn" class="voice-input-btn" title="Speak instead of typing">🎤</button>
+      </div>
+      <div class="voice-controls-row">
+        <button type="button" class="nlp-extract-btn" id="nlp-extract-btn">✨ Extract business profile</button>
+        <select id="voice-lang-select" class="voice-lang-select" title="Voice prompt language">
+          <option value="en">🔊 English</option>
+          <option value="hi">🔊 हिंदी (Hindi)</option>
+        </select>
+        <button type="button" id="voice-mute-toggle" class="voice-mute-toggle" title="Toggle voice prompts">🔊</button>
+      </div>
+      <div class="nlp-notes" id="nlp-notes"></div>
+    </div>
+
+    <div class="or-divider">or fill in manually</div>
+
+    <form id="business-form">
+      <div class="grid-2">
+        <div class="field">
+          <label for="district">District (Punjab)</label>
+          <select id="district" required></select>
+        </div>
+        <div class="field">
+          <label for="sector">Business Sector</label>
+          <select id="sector" required></select>
+        </div>
+        <div class="field">
+          <label for="investment">Investment (INR Lakhs)</label>
+          <input type="number" id="investment" value="500" min="0" step="1" required>
+          <div class="unit-hint" id="investment-hint"></div>
+        </div>
+        <div class="field">
+          <label for="employees">Number of Employees</label>
+          <input type="number" id="employees" value="25" min="1" max="800" required>
+        </div>
+        <div class="field">
+          <label for="power">Power Requirement (kW)</label>
+          <input type="number" id="power" value="40" min="1" max="500" required>
+        </div>
+        <div class="field">
+          <label for="land">Land / Built-up Area (sqm)</label>
+          <input type="number" id="land" value="400" min="10" max="10000" required>
+        </div>
+        <div class="field">
+          <label for="water">Water Usage (KLD)</label>
+          <input type="number" id="water" value="8" min="0" max="100" step="0.5" required>
+        </div>
+      </div>
+
+      <div class="checks">
+        <label class="check-item"><input type="checkbox" id="hazardous"> Uses hazardous material</label>
+        <label class="check-item"><input type="checkbox" id="boiler"> Uses boiler</label>
+        <label class="check-item"><input type="checkbox" id="service"> Service sector (non-manufacturing)</label>
+      </div>
+
+      <button type="submit" class="predict-btn" id="predict-btn">Predict required approvals</button>
+    </form>
+
+    <div class="loading-state" id="loading-state">
+      <div class="loading-spinner"></div>
+      Running the Approval Intelligence Engine…
+    </div>
+  </section>
+</div>
+
+<section class="results" id="results-section">
+  <div class="wrap">
+    <div class="section-label light">Step 2</div>
+    <h2 class="section-title light">Your predicted approval journey</h2>
+    <div class="results-summary" id="results-summary"></div>
+    <button type="button" class="download-report-btn" id="download-report-btn">
+      ⬇ Download compliance report (PDF)
+    </button>
+
+    <div class="journey-wrap">
+      <div class="journey-view-header">
+        <div class="section-label light" style="margin-bottom:0;">Recommended order — dependency-aware sequence</div>
+        <div class="journey-view-toggle">
+          <button type="button" class="view-toggle-btn active" data-view="timeline">Timeline</button>
+          <button type="button" class="view-toggle-btn" data-view="graph">Graph</button>
+        </div>
+      </div>
+      <div class="journey-list" id="journey-list"></div>
+      <div class="journey-graph-wrap" id="journey-graph-wrap">
+        <div class="graph-hint">Drag nodes to rearrange · scroll to zoom · drag background to pan · click a node for details</div>
+        <div class="graph-canvas" id="graph-canvas">
+          <svg id="graph-svg" width="100%" height="100%">
+            <g id="graph-edges"></g>
+            <g id="graph-nodes"></g>
+          </svg>
+        </div>
+        <div class="graph-detail-panel" id="graph-detail-panel"></div>
+      </div>
+    </div>
+
+    <div class="section-label light" style="margin-bottom:14px;">Full breakdown</div>
+    <div class="approval-list" id="approval-list"></div>
+
+    <div class="copilot-wrap">
+      <div class="section-label light">Ask about your approvals</div>
+      <h2 class="section-title light" style="font-size:26px; margin-bottom:10px;">Compliance copilot</h2>
+      <p class="copilot-intro">Ask what documents an approval needs, why it applies to your business, or which one to start with first. Answers are grounded in a fixed knowledge base and cited — nothing here is invented.</p>
+
+      <div class="copilot-panel">
+        <div class="copilot-suggestions" id="copilot-suggestions"></div>
+        <div class="copilot-thread" id="copilot-thread"></div>
+        <div class="copilot-input-row">
+          <input type="text" id="copilot-input" placeholder="e.g. What documents do I need for Fire NOC?" autocomplete="off">
+          <button type="button" class="copilot-ask-btn" id="copilot-ask-btn">Ask</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="disclaimer">
+      Prototype disclaimer: predictions are generated by an ANN trained on a synthetic Punjab business dataset built from general Indian regulatory patterns, for demonstration purposes. Not a substitute for official verification with the relevant Punjab government departments.
+    </div>
+  </div>
+</section>
+
+<section class="model-section" id="model">
+  <div class="wrap-wide">
+    <div class="section-label light">Under the hood</div>
+    <h2 class="section-title light">The Approval Intelligence Engine</h2>
+    <p style="color:#9AA3C4; max-width:60ch; font-size:15px; line-height:1.7; margin:0;">A feed-forward neural network trained on Punjab industrial-approval records, scoring twelve licenses, NOCs and registrations as independent probabilities rather than one combined verdict.</p>
+
+    <div class="spec-row">
+      <div class="spec-card"><div class="sc-label">Architecture</div><div class="sc-value">Feed-forward ANN</div></div>
+      <div class="spec-card"><div class="sc-label">Output heads</div><div class="sc-value">12 approvals</div></div>
+      <div class="spec-card"><div class="sc-label">Framework</div><div class="sc-value">TensorFlow / Keras</div></div>
+      <div class="spec-card"><div class="sc-label">Preprocessing</div><div class="sc-value">scikit-learn pipeline</div></div>
+    </div>
+
+    <div class="section-label light" style="margin-bottom:10px;">Layer shape</div>
+    <div class="layer-strip">
+      <span class="layer-chip io">Input</span><span class="layer-arrow">→</span>
+      <span class="layer-chip">256</span><span class="layer-arrow">→</span>
+      <span class="layer-chip">128</span><span class="layer-arrow">→</span>
+      <span class="layer-chip">64</span><span class="layer-arrow">→</span>
+      <span class="layer-chip io">Output · 12</span>
+    </div>
+    <p class="model-note">Each output neuron is scored independently and thresholded at 50% confidence, then the required set is re-ordered into the dependency-aware sequence shown in your journey — building-plan approval before a fire NOC, a fire NOC before an environmental clearance, and so on.</p>
+  </div>
+</section>
+
+<section class="stack-section" id="stack">
+  <div class="wrap-wide">
+    <div class="section-label">Built with</div>
+    <h2 class="section-title">Tech stack</h2>
+    <div class="tech-list">
+      <div class="tech-row"><span class="t-name">Flask + Flask-CORS</span><span class="t-role">Prediction &amp; extraction API</span></div>
+      <div class="tech-row"><span class="t-name">TensorFlow / Keras</span><span class="t-role">Trained ANN, 12 output heads</span></div>
+      <div class="tech-row"><span class="t-name">scikit-learn</span><span class="t-role">Feature preprocessing pipeline</span></div>
+      <div class="tech-row"><span class="t-name">Three.js</span><span class="t-role">Live neural-network hero visualization</span></div>
+      <div class="tech-row"><span class="t-name">Web Speech API</span><span class="t-role">Voice input &amp; multilingual voice prompts</span></div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+  <footer>
+    UdyamFlow AI — Tekathon Prototype · SIH26130: Intelligent Industrial Approval System
+  </footer>
+</div>
+
+<script>
+  const API_BASE = 'http://localhost:5000';
+
+  async function loadOptions() {
+    const res = await fetch(`${API_BASE}/api/options`);
+    const data = await res.json();
+
+    const districtSelect = document.getElementById('district');
+    const sectorSelect = document.getElementById('sector');
+
+    data.districts.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d; opt.textContent = d;
+      districtSelect.appendChild(opt);
+    });
+
+    data.sectors.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s; opt.textContent = s;
+      sectorSelect.appendChild(opt);
+    });
+  }
+
+  // ---------------------------------------------------------
+  // Voice fallback — speaks up when required fields weren't detected
+  // Supports English / Hindi / Punjabi, with a persistent mute toggle
+  // ---------------------------------------------------------
+  const VOICE_MUTE_KEY = 'udyamflow_voice_muted';
+
+  const VOICE_TEXT = {
+    en: {
+      langCode: 'en-IN',
+      district: 'which Punjab district',
+      sector: 'your business sector',
+      investment: 'your investment amount',
+      employees: 'your number of employees',
+      power: 'your power requirement',
+      land: 'your land or built-up area',
+      water: 'your water usage',
+      and: 'and',
+      forName: (name) => name ? `for ${name}` : 'for your business',
+      single: (item, ref) => `You haven't told me ${item} ${ref}. Please provide that detail so I can tell you the approvals you'll need.`,
+      multi: (items, ref) => `You haven't told me ${items} ${ref}. Please provide those details so I can tell you the approvals you'll need.`
+    },
+    hi: {
+      langCode: 'hi-IN',
+      district: 'पंजाब का कौन सा ज़िला',
+      sector: 'आपका व्यवसाय क्षेत्र',
+      investment: 'आपकी निवेश राशि',
+      employees: 'आपके कर्मचारियों की संख्या',
+      power: 'आपकी बिजली की आवश्यकता',
+      land: 'आपकी ज़मीन या निर्मित क्षेत्र',
+      water: 'आपके पानी के उपयोग की जानकारी',
+      and: 'और',
+      forName: (name) => name ? `${name} के लिए` : 'आपके व्यवसाय के लिए',
+      single: (item, ref) => `आपने मुझे ${item} नहीं बताया, ${ref}। कृपया यह जानकारी दें ताकि मैं आपको ज़रूरी मंज़ूरियाँ बता सकूं।`,
+      multi: (items, ref) => `आपने मुझे ${items} नहीं बताया, ${ref}। कृपया यह जानकारी दें ताकि मैं आपको ज़रूरी मंज़ूरियाँ बता सकूं।`
+    },
+    pa: {
+      langCode: 'pa-IN',
+      district: 'ਪੰਜਾਬ ਦਾ ਕਿਹੜਾ ਜ਼ਿਲ੍ਹਾ',
+      sector: 'ਤੁਹਾਡਾ ਕਾਰੋਬਾਰੀ ਖੇਤਰ',
+      investment: 'ਤੁਹਾਡੀ ਨਿਵੇਸ਼ ਰਾਸ਼ੀ',
+      employees: 'ਤੁਹਾਡੇ ਕਰਮਚਾਰੀਆਂ ਦੀ ਗਿਣਤੀ',
+      power: 'ਤੁਹਾਡੀ ਬਿਜਲੀ ਦੀ ਲੋੜ',
+      land: 'ਤੁਹਾਡੀ ਜ਼ਮੀਨ ਜਾਂ ਉਸਾਰੀ ਖੇਤਰ',
+      water: 'ਤੁਹਾਡੇ ਪਾਣੀ ਦੀ ਵਰਤੋਂ',
+      and: 'ਅਤੇ',
+      forName: (name) => name ? `${name} ਲਈ` : 'ਤੁਹਾਡੇ ਕਾਰੋਬਾਰ ਲਈ',
+      single: (item, ref) => `ਤੁਸੀਂ ਮੈਨੂੰ ${item} ਨਹੀਂ ਦੱਸਿਆ, ${ref}। ਕਿਰਪਾ ਕਰਕੇ ਇਹ ਜਾਣਕਾਰੀ ਦਿਓ ਤਾਂ ਜੋ ਮੈਂ ਤੁਹਾਨੂੰ ਲੋੜੀਂਦੀਆਂ ਮਨਜ਼ੂਰੀਆਂ ਦੱਸ ਸਕਾਂ।`,
+      multi: (items, ref) => `ਤੁਸੀਂ ਮੈਨੂੰ ${items} ਨਹੀਂ ਦੱਸਿਆ, ${ref}। ਕਿਰਪਾ ਕਰਕੇ ਇਹ ਜਾਣਕਾਰੀ ਦਿਓ ਤਾਂ ਜੋ ਮੈਂ ਤੁਹਾਨੂੰ ਲੋੜੀਂਦੀਆਂ ਮਨਜ਼ੂਰੀਆਂ ਦੱਸ ਸਕਾਂ।`
+    }
+  };
+
+  function getSelectedVoiceLang() {
+    const sel = document.getElementById('voice-lang-select');
+    return sel ? sel.value : 'en';
+  }
+
+  // ---------------------------------------------------------
+  // Voice INPUT — speak your business description instead of typing it
+  // ---------------------------------------------------------
+  const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognizer = null;
+  let isListening = false;
+
+  function toggleVoiceInput() {
+    const btn = document.getElementById('voice-input-btn');
+
+    if (!SpeechRecognitionAPI) {
+      alert('Voice input needs Chrome or Edge — this browser doesn\'t support speech recognition.');
+      return;
+    }
+
+    if (isListening) {
+      recognizer && recognizer.stop();
+      return;
+    }
+
+    const textarea = document.getElementById('nlp-input');
+    let finalTranscript = textarea.value.trim() ? textarea.value.trim() + ' ' : '';
+
+    recognizer = new SpeechRecognitionAPI();
+    recognizer.lang = (VOICE_TEXT[getSelectedVoiceLang()] || VOICE_TEXT.en).langCode;
+    recognizer.continuous = false;
+    recognizer.interimResults = true;
+    recognizer.maxAlternatives = 1;
+
+    recognizer.onstart = () => {
+      isListening = true;
+      btn.classList.add('listening');
+      btn.textContent = '⏹️';
+      btn.title = 'Listening… click to stop';
+    };
+
+    recognizer.onresult = (event) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript + ' ';
+        } else {
+          interim += transcript;
+        }
+      }
+      textarea.value = finalTranscript + interim;
+    };
+
+    recognizer.onerror = (e) => {
+      console.warn('Speech recognition error:', e.error);
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+        alert('Microphone access was blocked. Please allow microphone permission in your browser and try again.');
+      }
+    };
+
+    recognizer.onend = () => {
+      isListening = false;
+      btn.classList.remove('listening');
+      btn.textContent = '🎤';
+      btn.title = 'Speak instead of typing';
+    };
+
+    recognizer.start();
+  }
+
+  document.getElementById('voice-input-btn').addEventListener('click', toggleVoiceInput);
+
+  function isVoiceMuted() {
+    return localStorage.getItem(VOICE_MUTE_KEY) === 'true';
+  }
+
+  function setVoiceMuted(muted) {
+    localStorage.setItem(VOICE_MUTE_KEY, muted ? 'true' : 'false');
+    updateMuteButtonUI();
+    if (muted) window.speechSynthesis.cancel();
+  }
+
+  function updateMuteButtonUI() {
+    const btn = document.getElementById('voice-mute-toggle');
+    if (!btn) return;
+    const muted = isVoiceMuted();
+    btn.textContent = muted ? '🔇' : '🔊';
+    btn.classList.toggle('muted', muted);
+    btn.title = muted ? 'Voice prompts are OFF — tap to turn on' : 'Voice prompts are ON — tap to turn off';
+  }
+
+  document.getElementById('voice-mute-toggle').addEventListener('click', () => {
+    setVoiceMuted(!isVoiceMuted());
+  });
+  updateMuteButtonUI();
+
+  function extractBusinessName(text) {
+    const nameRegex = /\b([A-Z][a-zA-Z]*(?:\s+[A-Z][a-zA-Z]*)*)\s+(Enterprises|Industries|Pvt\.?\s?Ltd\.?|Limited|Company|Corp\.?|Ventures|Traders|Mills)\b/;
+    const match = text.match(nameRegex);
+    return match ? match[0] : null;
+  }
+
+  // The backend /api/extract only catches investment/employees when the
+  // number comes BEFORE the keyword ("25 employees", "5 lakh investment").
+  // Real descriptions just as often say it the other way round ("employees
+  // will be 25", "investment of 10,00,00,000") or write the rupee amount out
+  // in full Indian comma-grouping instead of using the words crore/lakh — the
+  // backend has no path for either. Power, land and water are never attempted
+  // on the backend at all. So every one of these gets a client-side fallback,
+  // otherwise they'd silently stay on their defaults forever.
+  function extractAdditionalFields(text) {
+    const result = {};
+
+    // --- Employees — keyword can come before OR after the number ---
+    const empDirect = text.match(/(\d+)\s*(?:employees?|workers?|people|staff)\b/i);
+    if (empDirect) {
+      result.employee_count = parseInt(empDirect[1], 10);
+    } else {
+      const empCtx = text.match(/(?:number of )?employees?[^.\n]{0,40}?(\d+)\b/i);
+      if (empCtx) result.employee_count = parseInt(empCtx[1], 10);
+    }
+
+    // --- Investment — crore/lakh words are already handled by the backend.
+    // This fallback catches a full Indian comma-grouped rupee amount tied to
+    // the word "investment" (e.g. "investment of 10,00,00,000"), and
+    // converts rupees -> lakhs.
+    const invCtx = text.match(/investment[^.\n]{0,90}?(?:₹|rs\.?|inr)?\s*([\d,]{4,})/i);
+    if (invCtx) {
+      const rupees = parseFloat(invCtx[1].replace(/,/g, ''));
+      if (!isNaN(rupees) && rupees > 0) {
+        result.investment_lakhs = Math.round((rupees / 100000) * 100) / 100;
+      }
+    }
+
+    // --- Power (kW) ---
+    const powerMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:kw|kilowatts?)\b/i);
+    if (powerMatch) {
+      result.power_requirement_kw = parseFloat(powerMatch[1]);
+    } else {
+      // Fallback: a number sitting near the word "power" with no unit at all,
+      // e.g. "power requirement up to 100". Assume kW (the field's own unit).
+      const powerCtx = text.match(/power[^.\n]{0,40}?(\d+(?:\.\d+)?)/i);
+      if (powerCtx) result.power_requirement_kw = parseFloat(powerCtx[1]);
+    }
+
+    // --- Land area (sqm) ---
+    const landSqmMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:sqm|sq\.?\s?m\.?|square\s?met(?:er|re)s?)\b/i);
+    const landSqftMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:sq\.?\s?ft\.?|sqft|square\s?f(?:ee|oo)t)\b/i);
+    if (landSqmMatch) {
+      result.land_area_sqm = parseFloat(landSqmMatch[1]);
+    } else if (landSqftMatch) {
+      result.land_area_sqm = Math.round(parseFloat(landSqftMatch[1]) * 0.092903 * 100) / 100; // sqft -> sqm
+    } else {
+      // Fallback: a bare number near "land"/"plot"/"built-up area" with no unit.
+      const landCtx = text.match(/(?:land|plot|built[\s-]?up)[^.\n]{0,50}?(\d+(?:\.\d+)?)/i);
+      if (landCtx) result.land_area_sqm = parseFloat(landCtx[1]);
+    }
+
+    // --- Water usage (KLD = kilolitres/day) ---
+    const waterKldMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:kld|kilolit(?:er|re)s?(?:\s*\/?\s*(?:per\s*)?day)?)\b/i);
+    const waterLpdMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:l|lit(?:er|re)s?)\s*(?:\/|per)\s*day\b/i);
+    if (waterKldMatch) {
+      result.water_usage_kld = parseFloat(waterKldMatch[1]);
+    } else if (waterLpdMatch) {
+      result.water_usage_kld = Math.round((parseFloat(waterLpdMatch[1]) / 1000) * 1000) / 1000; // L/day -> KLD
+    } else {
+      // Fallback: a bare number near "water" with no unit.
+      const waterCtx = text.match(/water[^.\n]{0,40}?(\d+(?:\.\d+)?)/i);
+      if (waterCtx) result.water_usage_kld = parseFloat(waterCtx[1]);
+    }
+
+    return result;
+  }
+
+  // The sector dropdown's actual option list comes from the backend
+  // (/api/options) at page load, so we don't know its exact wording ahead of
+  // time — but whatever it is, it's already sitting in the <select> as real
+  // <option> elements. Instead of guessing exact backend keyword strings
+  // (which breaks the moment someone says "AI/ML" instead of "software", or
+  // "pharmacy" instead of the backend's exact label), we define broad
+  // category keyword clusters, detect which cluster the user's text belongs
+  // to, then find the real dropdown option whose text matches that cluster's
+  // hint words. This way "IT Service", "machine learning", "AI ML startup",
+  // "software" all resolve to whatever the actual IT option is called.
+  const SECTOR_KEYWORD_CLUSTERS = [
+    {
+      textHints: ['it', 'software', 'tech', 'information technology'],
+      triggers: ['it ', 'i.t.', 'software', 'information technology', 'artificial intelligence',
+                 'machine learning', ' ai ', 'ai/ml', 'ai-ml', ' ml ', 'data science',
+                 'computer', 'app development', 'web development', 'saas', 'cloud', 'coding']
+    },
+    {
+      textHints: ['food', 'agro', 'agri', 'dairy', 'beverage', 'fmcg'],
+      triggers: ['food', 'agro', 'agri', 'dairy', 'milk', 'beverage', 'snack', 'bakery', 'fmcg']
+    },
+    {
+      textHints: ['health', 'hospital', 'medical', 'clinic', 'diagnostic'],
+      triggers: ['health', 'hospital', 'clinic', 'diagnostic', 'medical service', 'healthcare', 'wellness']
+    },
+    {
+      textHints: ['pharma', 'drug', 'medicine'],
+      triggers: ['pharma', 'pharmacy', 'medicine', 'drug manufactur', 'tablet', 'capsule']
+    },
+    {
+      textHints: ['chemical', 'petrochemical'],
+      triggers: ['chemical', 'petrochemical', 'fertilizer', 'fertiliser', 'dye', 'paint manufactur']
+    },
+    {
+      textHints: ['mechanical', 'engineering', 'machinery', 'metal', 'fabrication', 'automobile', 'auto'],
+      triggers: ['mechanical', 'engineering', 'machinery', 'metal work', 'fabrication', 'automobile',
+                 'auto parts', 'auto component', 'workshop', 'tool room', 'foundry']
+    },
+    {
+      textHints: ['textile', 'garment', 'apparel', 'fabric'],
+      triggers: ['textile', 'garment', 'apparel', 'fabric', 'clothing', 'yarn', 'weaving']
+    },
+    {
+      textHints: ['construction', 'cement', 'building material'],
+      triggers: ['construction', 'cement', 'building material', 'bricks', 'concrete']
+    },
+    {
+      textHints: ['electronics', 'electrical'],
+      triggers: ['electronics', 'electrical', 'circuit', 'pcb', 'appliance manufactur']
+    },
+    {
+      textHints: ['plastic', 'rubber', 'packaging'],
+      triggers: ['plastic', 'rubber', 'packaging', 'polymer']
+    },
+    {
+      textHints: ['logistics', 'warehouse', 'transport'],
+      triggers: ['logistics', 'warehous', 'transport', 'supply chain', 'courier']
+    },
+    {
+      textHints: ['handicraft', 'handloom', 'artisan'],
+      triggers: ['handicraft', 'handloom', 'artisan', 'craft']
+    }
+  ];
+
+  function guessSectorFromOptions(text) {
+    const lowerText = ` ${text.toLowerCase()} `;
+    const options = Array.from(document.getElementById('sector').options)
+      .filter(o => o.value); // skip the blank "— Select sector —" placeholder
+
+    for (const cluster of SECTOR_KEYWORD_CLUSTERS) {
+      const matchedTriggers = cluster.triggers.filter(kw => lowerText.includes(kw));
+      if (!matchedTriggers.length) continue;
+
+      // A cluster like "Food" bundles related-but-distinct options (Food
+      // Processing, Agro-based, Dairy…). Try the option whose own label
+      // contains the *specific* word the user actually used first — "food
+      // industry" should land on Food Processing, not on Agro-based just
+      // because both share a cluster. Only fall back to the cluster's
+      // broader hint list if nothing matches that specifically.
+      let matchedOption = options.find(o => {
+        const optText = o.textContent.toLowerCase();
+        return matchedTriggers.some(t => optText.includes(t.trim()));
+      });
+      if (!matchedOption) {
+        matchedOption = options.find(o => {
+          const optText = o.textContent.toLowerCase();
+          return cluster.textHints.some(hint => optText.includes(hint));
+        });
+      }
+      if (matchedOption) return matchedOption.value;
+    }
+    return null;
+  }
+
+  function buildMissingFieldPrompt(extracted, businessName, lang) {
+    const t = VOICE_TEXT[lang] || VOICE_TEXT.en;
+    const missing = [];
+    if (!extracted.district) missing.push(t.district);
+    if (!extracted.sector) missing.push(t.sector);
+    if (!extracted.investment_lakhs) missing.push(t.investment);
+    if (!extracted.employee_count) missing.push(t.employees);
+    if (!extracted.power_requirement_kw) missing.push(t.power);
+    if (!extracted.land_area_sqm) missing.push(t.land);
+    if (!extracted.water_usage_kld) missing.push(t.water);
+
+    if (missing.length === 0) return null;
+
+    const ref = t.forName(businessName);
+    if (missing.length === 1) return t.single(missing[0], ref);
+
+    const last = missing.pop();
+    return t.multi(`${missing.join(', ')} ${t.and} ${last}`, ref);
+  }
+
+  function getVoicesAsync() {
+    return new Promise((resolve) => {
+      let voices = window.speechSynthesis.getVoices();
+      if (voices.length) { resolve(voices); return; }
+      window.speechSynthesis.addEventListener('voiceschanged', () => resolve(window.speechSynthesis.getVoices()), { once: true });
+      setTimeout(() => resolve(window.speechSynthesis.getVoices()), 300);
+    });
+  }
+
+  async function speakPrompt(sentence, lang) {
+    if (!('speechSynthesis' in window) || isVoiceMuted()) return { audioAvailable: false, reason: 'muted' };
+
+    const langCode = (VOICE_TEXT[lang] || VOICE_TEXT.en).langCode;
+    const prefix = langCode.split('-')[0];
+    const voices = await getVoicesAsync();
+    const matchedVoice = voices.find(v => v.lang === langCode)
+      || voices.find(v => v.lang.toLowerCase().startsWith(prefix));
+
+    if (!matchedVoice) {
+      console.warn(`No installed voice for "${langCode}" — skipping audio to avoid garbled playback.`);
+      return { audioAvailable: false, reason: 'no-voice' };
+    }
+
+    window.speechSynthesis.cancel();
+    await new Promise((r) => setTimeout(r, 60));
+    const utter = new SpeechSynthesisUtterance(sentence);
+    utter.rate = 0.95;
+    utter.pitch = 1.0;
+    utter.lang = langCode;
+    utter.voice = matchedVoice;
+    utter.onerror = (e) => console.warn('Speech synthesis error:', e.error);
+    window.speechSynthesis.speak(utter);
+    return { audioAvailable: true };
+  }
+
+  const LANG_DISPLAY_NAME = { en: 'English', hi: 'Hindi', pa: 'Punjabi' };
+
+  async function showVoiceBubble(sentence, lang) {
+    let bubble = document.getElementById('voice-prompt-bubble');
+    if (!bubble) {
+      bubble = document.createElement('div');
+      bubble.id = 'voice-prompt-bubble';
+      bubble.className = 'voice-bubble';
+      const notes = document.getElementById('nlp-notes');
+      notes.parentNode.insertBefore(bubble, notes.nextSibling);
+    }
+    bubble.innerHTML = `
+      <span class="icon">🔊</span>
+      <span>${sentence}</span>
+      <button type="button" class="voice-replay-btn" id="voice-replay-btn">🔁 Play</button>
+    `;
+    bubble.style.display = 'flex';
+
+    const replay = async () => {
+      const result = await speakPrompt(sentence, lang);
+      renderVoiceAvailabilityNote(result, lang);
+    };
+    document.getElementById('voice-replay-btn').addEventListener('click', replay);
+
+    // Auto-attempt once, and reflect whether real audio actually played
+    const result = await speakPrompt(sentence, lang);
+    renderVoiceAvailabilityNote(result, lang);
+  }
+
+  function renderVoiceAvailabilityNote(result, lang) {
+    let note = document.getElementById('voice-availability-note');
+    if (!note) {
+      note = document.createElement('div');
+      note.id = 'voice-availability-note';
+      note.style.cssText = 'font-size:12.5px; color:#7A4A18; margin-top:6px; opacity:0.8;';
+      const bubble = document.getElementById('voice-prompt-bubble');
+      bubble.parentNode.insertBefore(note, bubble.nextSibling);
+    }
+    if (result.reason === 'no-voice') {
+      const name = LANG_DISPLAY_NAME[lang] || lang;
+      note.textContent = `⚠️ No ${name} voice installed on this browser/device — showing text only. Try Hindi or English, or add a ${name} voice in your system's speech settings.`;
+      note.style.display = 'block';
+    } else if (result.reason === 'muted') {
+      note.style.display = 'none';
+    } else {
+      note.style.display = 'none';
+    }
+  }
+
+  function hideVoiceBubble() {
+    const bubble = document.getElementById('voice-prompt-bubble');
+    if (bubble) bubble.style.display = 'none';
+    const note = document.getElementById('voice-availability-note');
+    if (note) note.style.display = 'none';
+  }
+
+  const ALL_CHECKABLE_FIELD_IDS = ['district', 'sector', 'investment', 'employees', 'power', 'land', 'water'];
+
+  function clearFieldFlags() {
+    ALL_CHECKABLE_FIELD_IDS.forEach(id => {
+      document.getElementById(id).parentElement.classList.remove('field-missing');
+    });
+  }
+
+  function flagFieldAsMissing(fieldId) {
+    document.getElementById(fieldId).parentElement.classList.add('field-missing');
+  }
+
+  document.getElementById('nlp-extract-btn').addEventListener('click', async () => {
+    const description = document.getElementById('nlp-input').value.trim();
+    if (!description) return;
+
+    const btn = document.getElementById('nlp-extract-btn');
+    btn.textContent = 'Extracting…';
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/extract`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description })
+      });
+      const data = await res.json();
+      const clientExtra = extractAdditionalFields(description);
+      const mergedExtracted = { ...data.extracted };
+      Object.keys(clientExtra).forEach(k => {
+        if (!mergedExtracted[k]) mergedExtracted[k] = clientExtra[k];
+      });
+      if (!mergedExtracted.sector) {
+        const guessedSector = guessSectorFromOptions(description);
+        if (guessedSector) mergedExtracted.sector = guessedSector;
+      }
+      applyExtracted(mergedExtracted);
+      renderNlpNotes(data.notes);
+
+      clearFieldFlags();
+      const businessName = extractBusinessName(description);
+      const voiceLang = getSelectedVoiceLang();
+      const missingPrompt = buildMissingFieldPrompt(mergedExtracted, businessName, voiceLang);
+
+      if (missingPrompt) {
+        showVoiceBubble(missingPrompt, voiceLang);
+        if (!mergedExtracted.district) flagFieldAsMissing('district');
+        if (!mergedExtracted.sector) flagFieldAsMissing('sector');
+        if (!mergedExtracted.investment_lakhs) flagFieldAsMissing('investment');
+        if (!mergedExtracted.employee_count) flagFieldAsMissing('employees');
+        if (!mergedExtracted.power_requirement_kw) flagFieldAsMissing('power');
+        if (!mergedExtracted.land_area_sqm) flagFieldAsMissing('land');
+        if (!mergedExtracted.water_usage_kld) flagFieldAsMissing('water');
+      } else {
+        hideVoiceBubble();
+      }
+    } catch (err) {
+      alert('Could not reach the extraction API. Make sure api.py is running.');
+      console.error(err);
+    } finally {
+      btn.textContent = '✨ Extract business profile';
+      btn.disabled = false;
+    }
+  });
+
+  // Every checkable field carries a hardcoded HTML default (investment=500,
+  // employees=25, power=40, land=400, water=8) so the manual form looks
+  // sensible on first load. But applyExtracted only *overwrites* a field when
+  // extraction succeeds for it — so on a failed/partial extraction, fields
+  // silently keep whatever was there before (the HTML default, or a leftover
+  // value from a previous attempt), while buildMissingFieldPrompt correctly
+  // flags them as missing. Result: form looks filled, voice prompt says
+  // missing. Fix: blank every field first, then apply only what was found.
+  function resetFieldsToBlank() {
+    document.getElementById('district').value = '';
+    document.getElementById('sector').value = '';
+    document.getElementById('investment').value = '';
+    document.getElementById('employees').value = '';
+    document.getElementById('power').value = '';
+    document.getElementById('land').value = '';
+    document.getElementById('water').value = '';
+    document.getElementById('hazardous').checked = false;
+    document.getElementById('boiler').checked = false;
+    document.getElementById('service').checked = false;
+  }
+
+  function applyExtracted(extracted) {
+    resetFieldsToBlank();
+    if (extracted.district) document.getElementById('district').value = extracted.district;
+    if (extracted.sector) document.getElementById('sector').value = extracted.sector;
+    if (extracted.investment_lakhs) document.getElementById('investment').value = extracted.investment_lakhs;
+    if (extracted.employee_count) document.getElementById('employees').value = extracted.employee_count;
+    if (extracted.power_requirement_kw) document.getElementById('power').value = extracted.power_requirement_kw;
+    if (extracted.land_area_sqm) document.getElementById('land').value = extracted.land_area_sqm;
+    if (extracted.water_usage_kld) document.getElementById('water').value = extracted.water_usage_kld;
+    if (extracted.uses_hazardous_material) document.getElementById('hazardous').checked = true;
+    if (extracted.uses_boiler) document.getElementById('boiler').checked = true;
+    if (extracted.is_service_sector) document.getElementById('service').checked = true;
+    updateInvestmentHint();
+  }
+
+  function updateInvestmentHint() {
+    const lakhs = parseFloat(document.getElementById('investment').value) || 0;
+    const hint = document.getElementById('investment-hint');
+    if (lakhs >= 100) {
+      hint.textContent = `≈ ₹${(lakhs / 100).toFixed(2)} Crore`;
+    } else {
+      hint.textContent = '';
+    }
+  }
+
+  document.getElementById('investment').addEventListener('input', updateInvestmentHint);
+  updateInvestmentHint();
+
+  ALL_CHECKABLE_FIELD_IDS.forEach(id => {
+    document.getElementById(id).addEventListener('input', () => {
+      document.getElementById(id).parentElement.classList.remove('field-missing');
+      const anyFlagged = ALL_CHECKABLE_FIELD_IDS.some(
+        fid => document.getElementById(fid).parentElement.classList.contains('field-missing')
+      );
+      if (!anyFlagged) hideVoiceBubble();
+    });
+  });
+
+  function renderNlpNotes(notes) {
+    const container = document.getElementById('nlp-notes');
+    container.innerHTML = '';
+    if (!notes.length) {
+      const chip = document.createElement('span');
+      chip.className = 'nlp-note-chip';
+      chip.style.background = '#F0EEE7';
+      chip.style.color = '#6B6558';
+      chip.textContent = 'Could not confidently detect fields — please fill manually below';
+      container.appendChild(chip);
+      return;
+    }
+    notes.forEach(note => {
+      const chip = document.createElement('span');
+      chip.className = 'nlp-note-chip';
+      chip.textContent = note;
+      container.appendChild(chip);
+    });
+  }
+
+  document.getElementById('business-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const payload = {
+      district: document.getElementById('district').value,
+      sector: document.getElementById('sector').value,
+      investment_lakhs: document.getElementById('investment').value,
+      employee_count: document.getElementById('employees').value,
+      power_requirement_kw: document.getElementById('power').value,
+      land_area_sqm: document.getElementById('land').value,
+      water_usage_kld: document.getElementById('water').value,
+      uses_hazardous_material: document.getElementById('hazardous').checked ? 1 : 0,
+      uses_boiler: document.getElementById('boiler').checked ? 1 : 0,
+      is_service_sector: document.getElementById('service').checked ? 1 : 0,
+    };
+
+    const btn = document.getElementById('predict-btn');
+    const loading = document.getElementById('loading-state');
+    const resultsSection = document.getElementById('results-section');
+
+    btn.disabled = true;
+    loading.classList.add('visible');
+    resultsSection.classList.remove('visible');
+
+    try {
+      const res = await fetch(`${API_BASE}/api/predict`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      renderResults(data, payload);
+    } catch (err) {
+      alert('Could not reach the prediction API. Make sure api.py is running on port 5000.');
+      console.error(err);
+    } finally {
+      btn.disabled = false;
+      loading.classList.remove('visible');
+    }
+  });
+
+  function renderResults(data, submittedProfile) {
+    const summary = document.getElementById('results-summary');
+    const list = document.getElementById('approval-list');
+    const journeyList = document.getElementById('journey-list');
+    const section = document.getElementById('results-section');
+
+    summary.innerHTML = `Based on your profile, <strong>${data.required_count} approval(s)</strong> are likely required.`;
+
+    // Dependency-ordered journey — reveals like clearance lights down a runway,
+    // one step at a time, so the sequence itself is legible on a screen recording.
+    journeyList.innerHTML = '';
+    data.journey.forEach((step, idx) => {
+      const item = document.createElement('div');
+      item.className = 'journey-item';
+      item.style.animationDelay = `${idx * 140}ms`;
+      const seq = String(idx + 1).padStart(2, '0');
+      item.innerHTML = `
+        <div class="journey-connector">
+          <div class="journey-dot" id="journey-dot-${idx}"></div>
+          <div class="journey-line"></div>
+        </div>
+        <div class="journey-card">
+          <span class="journey-seq">${seq}</span>
+          <div style="flex:1;">
+            <div class="journey-step-label">Step ${idx + 1}</div>
+            <div class="journey-name">${step.name}</div>
+          </div>
+          <button type="button" class="journey-why-btn" data-approval-key="${step.key}">Why? ▾</button>
+          <button type="button" class="journey-ask-btn" data-approval-key="${step.key}" data-approval-name="${step.name}">Ask about this →</button>
+        </div>
+        <div class="journey-explanation" id="journey-explain-${step.key}"></div>
+      `;
+      journeyList.appendChild(item);
+      // Light the dot up slightly after its card has faded in
+      setTimeout(() => {
+        const dot = document.getElementById(`journey-dot-${idx}`);
+        if (dot) dot.classList.add('lit');
+      }, idx * 140 + 350);
+    });
+
+    list.innerHTML = '';
+    data.results.forEach((r, idx) => {
+      const row = document.createElement('div');
+      row.className = `approval-row ${r.required ? 'required' : 'not-required'}`;
+      row.style.animationDelay = `${idx * 45}ms`;
+      row.innerHTML = `
+        <span class="approval-name">${r.name}</span>
+        <span>
+          <span class="confidence">${r.confidence}%</span>
+          <span class="approval-tag ${r.required ? 'tag-required' : 'tag-not-required'}">
+            ${r.required ? 'Required' : 'Not required'}
+          </span>
+        </span>
+      `;
+      list.appendChild(row);
+    });
+
+    section.classList.add('visible');
+    section.scrollIntoView({ behavior: 'smooth' });
+
+    // Fresh prediction -> fresh copilot conversation, tailored suggestions
+    currentApprovalNames = data.journey.map(step => step.name);
+    resetCopilotThread();
+    loadCopilotSuggestions(currentApprovalNames);
+
+    // Bot 2 — fetch personalized "why" explanations once for this whole
+    // prediction, cached client-side so opening each card is instant
+    currentPredictionId = data.prediction_id || null;
+    currentSubmittedProfile = submittedProfile || null;
+    currentJourney = data.journey;
+    explanationsCache = null;
+    explanationsLoading = null;
+
+    renderGraph(data.journey);
+  }
+
+  // ---------------------------------------------------------
+  // Bot 2 — "why" explainer. Distinct from the copilot (Bot 1): this
+  // explains why THIS submitted profile triggered each approval, using
+  // the actual numbers entered, rather than answering open-ended questions.
+  // ---------------------------------------------------------
+  let currentPredictionId = null;
+  let currentSubmittedProfile = null;
+  let currentJourney = [];
+  let explanationsCache = null;
+  let explanationsLoading = null;
+
+  async function fetchExplanations() {
+    if (explanationsCache) return explanationsCache;
+    if (explanationsLoading) return explanationsLoading;
+
+    const body = currentPredictionId
+      ? { prediction_id: currentPredictionId }
+      : { profile: currentSubmittedProfile, journey: currentJourney };
+
+    explanationsLoading = fetch(`${API_BASE}/api/explain`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    })
+      .then(res => res.json())
+      .then(data => {
+        const map = {};
+        (data.explanations || []).forEach(e => { map[e.key] = e; });
+        explanationsCache = map;
+        return map;
+      })
+      .catch(err => {
+        console.warn('Could not load explanations:', err);
+        explanationsCache = {};
+        return {};
+      });
+
+    return explanationsLoading;
+  }
+
+  document.getElementById('journey-list').addEventListener('click', async (e) => {
+    const whyBtn = e.target.closest('.journey-why-btn');
+    if (!whyBtn) return;
+
+    const key = whyBtn.dataset.approvalKey;
+    const panel = document.getElementById(`journey-explain-${key}`);
+    const isOpen = panel.classList.contains('open');
+
+    if (isOpen) {
+      panel.classList.remove('open');
+      whyBtn.textContent = 'Why? ▾';
+      return;
+    }
+
+    whyBtn.textContent = 'Why? ▴';
+    panel.classList.add('open');
+
+    if (!panel.dataset.loaded) {
+      panel.innerHTML = `<div class="copilot-typing"><span></span><span></span><span></span></div>`;
+      const map = await fetchExplanations();
+      const entry = map[key];
+      panel.innerHTML = entry
+        ? entry.explanation
+        : "Could not load an explanation for this approval right now.";
+      panel.dataset.loaded = '1';
+    }
+  });
+
+  // ---------------------------------------------------------
+  // Compliance copilot — grounded Q&A over the predicted approvals
+  // ---------------------------------------------------------
+  let currentApprovalNames = [];
+  let copilotBusy = false;
+
+  const copilotThread = document.getElementById('copilot-thread');
+  const copilotSuggestionsEl = document.getElementById('copilot-suggestions');
+  const copilotInput = document.getElementById('copilot-input');
+  const copilotAskBtn = document.getElementById('copilot-ask-btn');
+
+  function resetCopilotThread() {
+    copilotThread.innerHTML = '';
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function appendCopilotMessage(role, html) {
+    const msg = document.createElement('div');
+    msg.className = `copilot-msg ${role}`;
+    msg.innerHTML = html;
+    copilotThread.appendChild(msg);
+    copilotThread.scrollTop = copilotThread.scrollHeight;
+    return msg;
+  }
+
+  function appendTypingIndicator() {
+    return appendCopilotMessage('assistant', `
+      <div class="copilot-typing"><span></span><span></span><span></span></div>
+    `);
+  }
+
+  async function loadCopilotSuggestions(approvalNames) {
+    copilotSuggestionsEl.innerHTML = '';
+    try {
+      const res = await fetch(`${API_BASE}/api/ask/suggestions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ approvals: approvalNames })
+      });
+      const data = await res.json();
+      (data.suggestions || []).forEach(q => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'copilot-chip';
+        chip.textContent = q;
+        chip.addEventListener('click', () => askCopilot(q, null));
+        copilotSuggestionsEl.appendChild(chip);
+      });
+    } catch (err) {
+      // Suggestions are a nicety, not critical — fail silently
+      console.warn('Could not load copilot suggestions:', err);
+    }
+  }
+
+  async function askCopilot(question, approvalKey) {
+    if (!question || !question.trim() || copilotBusy) return;
+    copilotBusy = true;
+    copilotAskBtn.disabled = true;
+
+    appendCopilotMessage('user', escapeHtml(question));
+    copilotInput.value = '';
+    const typingMsg = appendTypingIndicator();
+
+    // Scroll the copilot panel into view so the answer is visible even if
+    // the user clicked "Ask about this" from a journey card further up
+    document.querySelector('.copilot-wrap').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    try {
+      const res = await fetch(`${API_BASE}/api/ask`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question, approval: approvalKey || undefined })
+      });
+      const data = await res.json();
+
+      const modeLabel = data.mode === 'generated' ? 'Grounded answer'
+        : data.mode === 'extractive' ? 'From knowledge base'
+        : data.mode === 'scope_notice' ? "What I can help with"
+        : data.mode === 'no_match' ? 'Outside scope'
+        : 'Answer';
+      const modeClass = data.mode === 'generated' ? '' : 'extractive';
+
+      let citationsHtml = '';
+      if (data.citations && data.citations.length) {
+        citationsHtml = `<div class="copilot-citations">` +
+          data.citations.map(c => `<span class="copilot-citation">${escapeHtml(c.title)} · ${escapeHtml(c.section)}</span>`).join('') +
+          `</div>`;
+      }
+
+      typingMsg.className = `copilot-msg assistant${(data.mode === 'no_match' || data.mode === 'scope_notice') ? ' no-match' : ''}`;
+      typingMsg.innerHTML = `
+        <span class="copilot-mode-tag ${modeClass}">${modeLabel}</span>
+        <div>${escapeHtml(data.answer).replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>')}</div>
+        ${citationsHtml}
+      `;
+    } catch (err) {
+      typingMsg.className = 'copilot-msg assistant no-match';
+      typingMsg.innerHTML = `
+        <span class="copilot-mode-tag extractive">Connection issue</span>
+        <div>Could not reach the compliance copilot. Check that the backend is running.</div>
+      `;
+    } finally {
+      copilotBusy = false;
+      copilotAskBtn.disabled = false;
+    }
+  }
+
+  copilotAskBtn.addEventListener('click', () => askCopilot(copilotInput.value, null));
+  copilotInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') askCopilot(copilotInput.value, null);
+  });
+
+  // Event delegation: journey cards are re-rendered on every prediction,
+  // so bind once on the container rather than per-button
+  document.getElementById('journey-list').addEventListener('click', (e) => {
+    const btn = e.target.closest('.journey-ask-btn');
+    if (!btn) return;
+    const key = btn.dataset.approvalKey;
+    const name = btn.dataset.approvalName;
+    askCopilot(`What documents do I need for ${name}, and why is it required?`, key);
+  });
+
+  // ---------------------------------------------------------
+  // Interactive dependency graph (the "React Flow" feature) — a hand-built
+  // vanilla-JS/SVG node graph: draggable nodes, wheel-zoom, drag-to-pan,
+  // click-to-inspect. Built without React since this page has no React/JSX
+  // pipeline; behaves the same way for demo purposes.
+  //
+  // Node positions come from a fixed DAG describing realistic dependency
+  // tiers between the 12 approvals (which approval logically precedes
+  // which). Only nodes for approvals actually in the CURRENT prediction's
+  // journey are drawn; edges are drawn only when both endpoints are present.
+  // ---------------------------------------------------------
+  const APPROVAL_DAG = {
+    // key: { tier: 0-based dependency level, after: [keys this depends on] }
+    building_plan_approval:  { tier: 0, after: [] },
+    trade_license:            { tier: 1, after: ['building_plan_approval'] },
+    gst_registration:         { tier: 1, after: ['building_plan_approval'] },
+    labour_registration:      { tier: 1, after: ['building_plan_approval'] },
+    factory_license:          { tier: 2, after: ['trade_license', 'labour_registration'] },
+    electricity_noc:          { tier: 2, after: ['trade_license'] },
+    fire_noc:                 { tier: 3, after: ['factory_license'] },
+    pollution_noc:            { tier: 3, after: ['factory_license'] },
+    environmental_clearance:  { tier: 4, after: ['pollution_noc'] },
+    boiler_license:           { tier: 4, after: ['fire_noc'] },
+    explosives_license:       { tier: 4, after: ['fire_noc'] },
+    fssai_license:            { tier: 5, after: ['pollution_noc', 'factory_license'] },
+  };
+
+  let graphNodes = {};       // key -> { x, y, name, confidence, el }
+  let graphViewBox = { x: 0, y: 0, w: 900, h: 480, scale: 1 };
+  let graphDraggingNode = null;
+  let graphPanning = false;
+  let graphPanStart = null;
+  let graphSelectedKey = null;
+
+  const NODE_RADIUS = 34;
+  const TIER_SPACING_X = 150;
+  const NODE_SPACING_Y = 100;
+
+  function computeGraphLayout(journey) {
+    const presentKeys = new Set(journey.map(s => s.key));
+    const byTier = {};
+
+    journey.forEach(step => {
+      const dag = APPROVAL_DAG[step.key] || { tier: 0, after: [] };
+      if (!byTier[dag.tier]) byTier[dag.tier] = [];
+      byTier[dag.tier].push(step);
+    });
+
+    const tiers = Object.keys(byTier).map(Number).sort((a, b) => a - b);
+    const nodes = {};
+
+    tiers.forEach((tier, tierIdx) => {
+      const stepsInTier = byTier[tier];
+      const tierHeight = stepsInTier.length * NODE_SPACING_Y;
+      const startY = 240 - tierHeight / 2 + NODE_SPACING_Y / 2;
+
+      stepsInTier.forEach((step, i) => {
+        nodes[step.key] = {
+          x: 90 + tierIdx * TIER_SPACING_X,
+          y: startY + i * NODE_SPACING_Y,
+          name: step.name,
+          confidence: step.confidence,
+        };
+      });
+    });
+
+    return { nodes, presentKeys };
+  }
+
+  function renderGraph(journey) {
+    const svg = document.getElementById('graph-svg');
+    const edgesGroup = document.getElementById('graph-edges');
+    const nodesGroup = document.getElementById('graph-nodes');
+    edgesGroup.innerHTML = '';
+    nodesGroup.innerHTML = '';
+
+    const { nodes, presentKeys } = computeGraphLayout(journey);
+    graphNodes = nodes;
+    graphSelectedKey = null;
+    document.getElementById('graph-detail-panel').classList.remove('open');
+
+    const svgNS = 'http://www.w3.org/2000/svg';
+
+    // Edges first, so nodes render on top
+    Object.keys(APPROVAL_DAG).forEach(key => {
+      if (!presentKeys.has(key)) return;
+      const dag = APPROVAL_DAG[key];
+      dag.after.forEach(parentKey => {
+        if (!presentKeys.has(parentKey)) return;
+        const from = nodes[parentKey];
+        const to = nodes[key];
+        if (!from || !to) return;
+
+        const path = document.createElementNS(svgNS, 'path');
+        path.setAttribute('class', 'graph-edge');
+        path.dataset.from = parentKey;
+        path.dataset.to = key;
+        edgesGroup.appendChild(path);
+      });
+    });
+
+    function updateEdgePaths() {
+      Array.from(edgesGroup.children).forEach(path => {
+        const from = graphNodes[path.dataset.from];
+        const to = graphNodes[path.dataset.to];
+        if (!from || !to) return;
+        const midX = (from.x + to.x) / 2;
+        path.setAttribute(
+          'd',
+          `M ${from.x} ${from.y} C ${midX} ${from.y}, ${midX} ${to.y}, ${to.x} ${to.y}`
+        );
+      });
+    }
+
+    // Nodes
+    Object.keys(nodes).forEach((key, idx) => {
+      const node = nodes[key];
+      const g = document.createElementNS(svgNS, 'g');
+      g.setAttribute('class', 'graph-node-group');
+      g.setAttribute('transform', `translate(${node.x}, ${node.y})`);
+      g.dataset.key = key;
+
+      const circle = document.createElementNS(svgNS, 'circle');
+      circle.setAttribute('class', 'graph-node-circle');
+      circle.setAttribute('r', NODE_RADIUS);
+      g.appendChild(circle);
+
+      const seqText = document.createElementNS(svgNS, 'text');
+      seqText.setAttribute('class', 'graph-node-seq');
+      seqText.setAttribute('y', -6);
+      seqText.textContent = String(idx + 1).padStart(2, '0');
+      g.appendChild(seqText);
+
+      const labelLines = wrapLabel(node.name, 13);
+      labelLines.forEach((line, li) => {
+        const labelText = document.createElementNS(svgNS, 'text');
+        labelText.setAttribute('class', 'graph-node-label');
+        labelText.setAttribute('y', 10 + li * 12);
+        labelText.textContent = line;
+        g.appendChild(labelText);
+      });
+
+      nodesGroup.appendChild(g);
+      node.el = g;
+
+      // Drag handling
+      g.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        graphDraggingNode = key;
+        g.classList.add('dragging');
+      });
+      g.addEventListener('touchstart', (e) => {
+        e.stopPropagation();
+        graphDraggingNode = key;
+        g.classList.add('dragging');
+      }, { passive: true });
+
+      g.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (graphDraggingNode) return; // don't treat a drag-release as a click
+        showGraphNodeDetail(key, node);
+      });
+    });
+
+    updateEdgePaths();
+    graphEdgeUpdater = updateEdgePaths;
+    resetGraphView();
+  }
+
+  let graphEdgeUpdater = () => {};
+
+  function wrapLabel(text, maxCharsPerLine) {
+    const words = text.split(' ');
+    const lines = [];
+    let current = '';
+    words.forEach(word => {
+      if ((current + ' ' + word).trim().length > maxCharsPerLine && current) {
+        lines.push(current.trim());
+        current = word;
+      } else {
+        current = (current + ' ' + word).trim();
+      }
+    });
+    if (current) lines.push(current);
+    return lines.slice(0, 3);
+  }
+
+  function applyGraphTransform() {
+    const nodesGroup = document.getElementById('graph-nodes');
+    const edgesGroup = document.getElementById('graph-edges');
+    const t = `translate(${graphViewBox.x} ${graphViewBox.y}) scale(${graphViewBox.scale})`;
+    nodesGroup.setAttribute('transform', t);
+    edgesGroup.setAttribute('transform', t);
+  }
+
+  function resetGraphView() {
+    graphViewBox = { x: 40, y: 0, w: 900, h: 480, scale: 1 };
+    applyGraphTransform();
+  }
+
+  async function showGraphNodeDetail(key, node) {
+    // Deselect previous, select this one
+    Object.values(graphNodes).forEach(n => n.el && n.el.classList.remove('selected'));
+    node.el.classList.add('selected');
+    graphSelectedKey = key;
+
+    // Highlight connected edges
+    Array.from(document.getElementById('graph-edges').children).forEach(path => {
+      const connected = path.dataset.from === key || path.dataset.to === key;
+      path.classList.toggle('highlighted', connected);
+    });
+
+    const panel = document.getElementById('graph-detail-panel');
+    panel.classList.add('open');
+    panel.innerHTML = `
+      <div class="graph-detail-title">${node.name}</div>
+      <div class="graph-detail-confidence">${node.confidence}% confidence</div>
+      <div class="graph-detail-body"><div class="copilot-typing"><span></span><span></span><span></span></div></div>
+    `;
+
+    const map = await fetchExplanations();
+    const entry = map[key];
+    const body = panel.querySelector('.graph-detail-body');
+    body.textContent = entry ? entry.explanation : 'Explanation unavailable right now.';
+
+    const actions = document.createElement('div');
+    actions.className = 'graph-detail-actions';
+    const askBtn = document.createElement('button');
+    askBtn.type = 'button';
+    askBtn.className = 'journey-ask-btn';
+    askBtn.textContent = 'Ask copilot about this →';
+    askBtn.addEventListener('click', () => {
+      askCopilot(`What documents do I need for ${node.name}, and why is it required?`, key);
+      document.querySelector('.copilot-wrap').scrollIntoView({ behavior: 'smooth' });
+    });
+    actions.appendChild(askBtn);
+    panel.appendChild(actions);
+  }
+
+  // Pan + zoom + drag, bound once on the canvas
+  const graphCanvas = document.getElementById('graph-canvas');
+
+  graphCanvas.addEventListener('mousemove', (e) => {
+    if (graphDraggingNode) {
+      const node = graphNodes[graphDraggingNode];
+      if (!node) return;
+      const rect = graphCanvas.getBoundingClientRect();
+      node.x = (e.clientX - rect.left - graphViewBox.x) / graphViewBox.scale;
+      node.y = (e.clientY - rect.top - graphViewBox.y) / graphViewBox.scale;
+      node.el.setAttribute('transform', `translate(${node.x}, ${node.y})`);
+      graphEdgeUpdater();
+    } else if (graphPanning) {
+      graphViewBox.x = graphPanStart.vx + (e.clientX - graphPanStart.mx);
+      graphViewBox.y = graphPanStart.vy + (e.clientY - graphPanStart.my);
+      applyGraphTransform();
+    }
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (graphDraggingNode) {
+      const node = graphNodes[graphDraggingNode];
+      if (node && node.el) node.el.classList.remove('dragging');
+    }
+    graphDraggingNode = null;
+    graphPanning = false;
+    graphCanvas.classList.remove('panning');
+  });
+
+  graphCanvas.addEventListener('mousedown', (e) => {
+    graphPanning = true;
+    graphPanStart = { mx: e.clientX, my: e.clientY, vx: graphViewBox.x, vy: graphViewBox.y };
+    graphCanvas.classList.add('panning');
+  });
+
+  graphCanvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.08 : 0.08;
+    const newScale = Math.min(2.2, Math.max(0.45, graphViewBox.scale + delta));
+    graphViewBox.scale = newScale;
+    applyGraphTransform();
+  }, { passive: false });
+
+  // View toggle: Timeline <-> Graph
+  document.querySelectorAll('.view-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.view-toggle-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const view = btn.dataset.view;
+      document.getElementById('journey-list').style.display = view === 'timeline' ? '' : 'none';
+      document.getElementById('journey-graph-wrap').classList.toggle('active', view === 'graph');
+    });
+  });
+
+  // ---------------------------------------------------------
+  // Downloadable compliance report (PDF) — the capstone feature that ties
+  // the prediction, journey, and Bot 2's personalized explanations into one
+  // artifact the user can actually keep and act on. Pure client-side
+  // (jsPDF), so it can never break the backend or the live demo.
+  // ---------------------------------------------------------
+  const downloadReportBtn = document.getElementById('download-report-btn');
+
+  function pdfAddWrapped(doc, text, x, y, maxWidth, lineHeight, pageHeight, marginBottom) {
+    const lines = doc.splitTextToSize(text, maxWidth);
+    lines.forEach(line => {
+      if (y > pageHeight - marginBottom) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(line, x, y);
+      y += lineHeight;
+    });
+    return y;
+  }
+
+  downloadReportBtn.addEventListener('click', async () => {
+    if (!currentJourney || !currentJourney.length) {
+      alert('Run a prediction first, then download the report.');
+      return;
+    }
+
+    downloadReportBtn.disabled = true;
+    downloadReportBtn.textContent = 'Generating report…';
+
+    try {
+      const explanations = await fetchExplanations();
+
+      const pdfNamespace = window.jspdf || window.jsPDF;
+      const JsPDFConstructor = pdfNamespace && (pdfNamespace.jsPDF || pdfNamespace);
+      if (typeof JsPDFConstructor !== 'function') {
+        throw new Error(
+          'jsPDF library is unavailable. Open this page through a local HTTP server (for example: python -m http.server 5500) and check your internet connection.'
+        );
+      }
+      const doc = new JsPDFConstructor({ unit: 'mm', format: 'a4' });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const marginX = 20;
+      const maxWidth = pageWidth - marginX * 2;
+      let y = 24;
+
+      // Header
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(18);
+      doc.text('UdyamFlow AI — Compliance Report', marginX, y);
+      y += 8;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(110, 110, 110);
+      doc.text(`Generated ${new Date().toLocaleString()}`, marginX, y);
+      doc.setTextColor(0, 0, 0);
+      y += 12;
+
+      // Business profile
+      if (currentSubmittedProfile) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(13);
+        doc.text('Business Profile', marginX, y);
+        y += 7;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10.5);
+        const p = currentSubmittedProfile;
+        const profileLines = [
+          `District: ${p.district || '—'}      Sector: ${p.sector || '—'}`,
+          `Investment: ₹${p.investment_lakhs || '—'} lakh      Employees: ${p.employee_count || '—'}`,
+          `Power requirement: ${p.power_requirement_kw || '—'} kW      Land area: ${p.land_area_sqm || '—'} sqm`,
+          `Water usage: ${p.water_usage_kld || '—'} KLD`,
+          `Hazardous material: ${p.uses_hazardous_material ? 'Yes' : 'No'}      Uses boiler: ${p.uses_boiler ? 'Yes' : 'No'}      Service sector: ${p.is_service_sector ? 'Yes' : 'No'}`,
+        ];
+        profileLines.forEach(line => {
+          y = pdfAddWrapped(doc, line, marginX, y, maxWidth, 6, pageHeight, 20);
+        });
+        y += 6;
+      }
+
+      // Summary line
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.text(`${currentJourney.length} Approval(s) Required — Recommended Order`, marginX, y);
+      y += 10;
+
+      // Each approval: name, confidence, why (Bot 2 explanation)
+      currentJourney.forEach((step, idx) => {
+        if (y > pageHeight - 40) {
+          doc.addPage();
+          y = 20;
+        }
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.text(`${idx + 1}. ${step.name}`, marginX, y);
+        y += 6;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9.5);
+        doc.setTextColor(120, 90, 20);
+        doc.text(`Model confidence: ${step.confidence}%`, marginX, y);
+        doc.setTextColor(0, 0, 0);
+        y += 6;
+
+        const entry = explanations[step.key];
+        const whyText = entry ? entry.explanation : 'Explanation not available.';
+        doc.setFontSize(10);
+        y = pdfAddWrapped(doc, whyText, marginX, y, maxWidth, 5.2, pageHeight, 20);
+        y += 8;
+      });
+
+      // Footer disclaimer on every page
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(7.5);
+        doc.setTextColor(140, 140, 140);
+        doc.text(
+          'Prototype output — generated by an ANN trained on a synthetic Punjab dataset, for demonstration purposes. Not a substitute for official verification with the relevant Punjab government departments.',
+          marginX, pageHeight - 12, { maxWidth }
+        );
+        doc.text(`Page ${i} of ${pageCount}`, pageWidth - marginX - 20, pageHeight - 12);
+        doc.setTextColor(0, 0, 0);
+      }
+
+      const filename = `udyamflow-compliance-report-${Date.now()}.pdf`;
+      doc.save(filename);
+    } catch (err) {
+      console.error('PDF generation failed:', err);
+      alert('Could not generate the report. Check the console for details.');
+    } finally {
+      downloadReportBtn.disabled = false;
+      downloadReportBtn.textContent = '⬇ Download compliance report (PDF)';
+    }
+  });
+
+  loadOptions();
+
+  // ---------------------------------------------------------
+  // 3D Neural Network Hero — Three.js
+  // Layer sizes echo the real model shape (input, 256, 128, 64, output=12),
+  // visually thinned out so it stays legible.
+  // ---------------------------------------------------------
+  (function initNetworkHero() {
+    const container = document.getElementById('network-hero');
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
+    camera.position.set(0, 0, 26);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    // Visual layer sizes (thinned down from the real 38-256-128-64-12 for legibility)
+    const layerSizes = [7, 10, 8, 6, 5];
+    const layerSpacingX = 11;
+    const nodeSpacingY = 2.6;
+
+    const nodeGroups = [];   // array of arrays of THREE.Mesh
+    const nodeGeometry = new THREE.SphereGeometry(0.28, 16, 16);
+    const nodeMaterial = new THREE.MeshBasicMaterial({ color: 0xE8A33D });
+    const nodeMaterialDim = new THREE.MeshBasicMaterial({ color: 0x39508F });
+
+    const totalWidth = (layerSizes.length - 1) * layerSpacingX;
+
+    layerSizes.forEach((count, layerIdx) => {
+      const x = -totalWidth / 2 + layerIdx * layerSpacingX;
+      const layerNodes = [];
+      const totalHeight = (count - 1) * nodeSpacingY;
+
+      for (let i = 0; i < count; i++) {
+        const y = -totalHeight / 2 + i * nodeSpacingY;
+        const mat = (layerIdx === 0 || layerIdx === layerSizes.length - 1)
+          ? nodeMaterial.clone()
+          : nodeMaterialDim.clone();
+        const sphere = new THREE.Mesh(nodeGeometry, mat);
+        sphere.position.set(x, y, 0);
+        scene.add(sphere);
+        layerNodes.push(sphere);
+      }
+      nodeGroups.push(layerNodes);
+    });
+
+    // Connections between consecutive layers
+    const lineMaterial = new THREE.LineBasicMaterial({
+      color: 0x3A4A73, transparent: true, opacity: 0.25
+    });
+    const connections = [];
+
+    for (let l = 0; l < nodeGroups.length - 1; l++) {
+      nodeGroups[l].forEach(fromNode => {
+        nodeGroups[l + 1].forEach(toNode => {
+          const points = [fromNode.position.clone(), toNode.position.clone()];
+          const geom = new THREE.BufferGeometry().setFromPoints(points);
+          const line = new THREE.Line(geom, lineMaterial);
+          scene.add(line);
+          connections.push({ line, from: fromNode, to: toNode, layer: l });
+        });
+      });
+    }
+
+    // Traveling pulses — small bright spheres moving along random connections
+    const pulseGeometry = new THREE.SphereGeometry(0.16, 8, 8);
+    const pulses = [];
+
+    function spawnPulse() {
+      const layer = Math.floor(Math.random() * (nodeGroups.length - 1));
+      const fromOptions = nodeGroups[layer];
+      const toOptions = nodeGroups[layer + 1];
+      const from = fromOptions[Math.floor(Math.random() * fromOptions.length)];
+      const to = toOptions[Math.floor(Math.random() * toOptions.length)];
+
+      const mat = new THREE.MeshBasicMaterial({ color: 0xF2A65A });
+      const mesh = new THREE.Mesh(pulseGeometry, mat);
+      mesh.position.copy(from.position);
+      scene.add(mesh);
+
+      pulses.push({ mesh, from: from.position.clone(), to: to.position.clone(), t: 0 });
+    }
+
+    // Gentle rotation group (wraps everything for a subtle 3D tilt)
+    const group = new THREE.Group();
+    scene.children.slice().forEach(obj => group.add(obj));
+    scene.add(group);
+    group.rotation.x = 0.15;
+
+    let lastSpawn = 0;
+
+    function animate(time) {
+      requestAnimationFrame(animate);
+
+      if (time - lastSpawn > 180) {
+        spawnPulse();
+        lastSpawn = time;
+      }
+
+      for (let i = pulses.length - 1; i >= 0; i--) {
+        const p = pulses[i];
+        p.t += 0.02;
+        if (p.t >= 1) {
+          scene.remove(p.mesh);
+          pulses.splice(i, 1);
+          continue;
+        }
+        p.mesh.position.lerpVectors(p.from, p.to, p.t);
+      }
+
+      group.rotation.y = Math.sin(time * 0.0002) * 0.25;
+
+      renderer.render(scene, camera);
+    }
+    requestAnimationFrame(animate);
+
+    window.addEventListener('resize', () => {
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    });
+  })();
+
+  // ---------------------------------------------------------
+  // Sticky nav — shows after scrolling past the hero, swaps to a
+  // light-mode skin over paper zones, highlights the current section,
+  // and handles smooth-scroll for every [data-scroll] control.
+  // ---------------------------------------------------------
+  (function initNav() {
+    const NAV_SECTIONS = [
+      { id: 'overview', zone: 'dark' },
+      { id: 'how-it-works', zone: 'light' },
+      { id: 'apply', zone: 'light' },
+      { id: 'results-section', zone: 'dark' },
+      { id: 'model', zone: 'dark' },
+      { id: 'stack', zone: 'light' }
+    ];
+
+    const nav = document.getElementById('topnav');
+
+    function updateNav() {
+      if (window.scrollY > 80) nav.classList.add('show'); else nav.classList.remove('show');
+
+      let current = NAV_SECTIONS[0];
+      NAV_SECTIONS.forEach(s => {
+        const el = document.getElementById(s.id);
+        if (el && el.offsetParent !== null && el.getBoundingClientRect().top <= 130) current = s;
+      });
+      nav.classList.toggle('on-paper', current.zone === 'light');
+
+      document.querySelectorAll('.nav-link').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.scroll === current.id);
+      });
+    }
+
+    window.addEventListener('scroll', updateNav, { passive: true });
+    updateNav();
+
+    document.querySelectorAll('[data-scroll]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = document.getElementById(btn.dataset.scroll);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+  })();
+
+  // ---------------------------------------------------------
+  // Reveal-on-scroll for the How-it-works pipeline steps
+  // ---------------------------------------------------------
+  (function initReveal() {
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in-view'); });
+    }, { threshold: 0.2 });
+    document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+  })();
+
+  // ---------------------------------------------------------
+  // Boot / welcome sequence — plays once per page load, greets
+  // the visitor, explains what this prototype is, then hands off
+  // to the main app. Skippable at any time.
+  // ---------------------------------------------------------
+  (function runBootSequence() {
+    document.body.classList.add('boot-locked');
+
+    const overlay = document.getElementById('boot-overlay');
+    const log = document.getElementById('boot-log');
+    const welcome = document.getElementById('boot-welcome');
+    const continueBtn = document.getElementById('boot-continue-btn');
+    const skipBtn = document.getElementById('boot-skip-btn');
+
+    const bootLines = [
+      'Loading Punjab industrial regulatory dataset — 8,000 records…',
+      'Initializing Approval Intelligence Engine (ANN)…',
+      'Calibrating dependency-ordered clearance sequence…',
+      'All systems nominal.'
+    ];
+
+    const welcomeSpeech = "Welcome to UdyamFlow AI. This is UdyamFlow AI — a base prototype built for Chandigarh University's Tekathon, solving SIH26130, the Intelligent Industrial Approval System. Describe any industrial business in plain language, and I'll tell you exactly which approvals it needs, and in what order, before a single brick gets laid.";
+
+    let dismissed = false;
+
+    function dismiss() {
+      if (dismissed) return;
+      dismissed = true;
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      overlay.classList.add('dismissed');
+      document.body.classList.remove('boot-locked');
+      setTimeout(() => { overlay.style.display = 'none'; }, 550);
+    }
+
+    continueBtn.addEventListener('click', dismiss);
+    skipBtn.addEventListener('click', dismiss);
+
+    bootLines.forEach((text, idx) => {
+      setTimeout(() => {
+        if (dismissed) return;
+        const line = document.createElement('div');
+        line.className = 'boot-log-line';
+        line.innerHTML = `<span class="boot-line-check">✓</span>${text}`;
+        log.appendChild(line);
+      }, idx * 480);
+    });
+
+    setTimeout(() => {
+      if (dismissed) return;
+      welcome.classList.add('shown');
+      if (typeof speakPrompt === 'function' && typeof isVoiceMuted === 'function' && !isVoiceMuted()) {
+        speakPrompt(welcomeSpeech, 'en');
+      }
+    }, bootLines.length * 480 + 300);
+  })();
+</script>
+
+</body>
+</html>
