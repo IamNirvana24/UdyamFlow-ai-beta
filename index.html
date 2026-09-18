@@ -3174,10 +3174,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // app serves both the frontend and the API, so a relative path just hits
   // whatever domain the page is already loaded from — no hardcoded URL,
   // no CORS, works on any deploy without editing this file again.
-  const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:')
-    ? 'http://localhost:5000'
-    : '';
-
+  const API_BASE = "https://udyamflow-ai-beta.onrender.com";
   async function loadOptions() {
     const res = await fetch(`${API_BASE}/api/options`);
     const data = await res.json();
