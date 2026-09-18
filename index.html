@@ -3168,7 +3168,15 @@ document.addEventListener("DOMContentLoaded", function () {
 </div>
 
 <script>
-  const API_BASE = 'http://localhost:5000';
+  // Local dev (opened via file:// or served on localhost) still needs the
+  // absolute localhost URL, since a relative fetch has no origin to resolve
+  // against there. Once deployed (Render, or anywhere else), the same Flask
+  // app serves both the frontend and the API, so a relative path just hits
+  // whatever domain the page is already loaded from — no hardcoded URL,
+  // no CORS, works on any deploy without editing this file again.
+  const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:')
+    ? 'http://localhost:5000'
+    : '';
 
   async function loadOptions() {
     const res = await fetch(`${API_BASE}/api/options`);
