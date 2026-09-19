@@ -3177,7 +3177,7 @@ document.addEventListener("DOMContentLoaded", function () {
 </div>
 
 <script>
-  const API_BASE = 'http://localhost:5000';
+  const API_BASE = 'https://udyamflow-ai-beta.onrender.com';
 
   async function loadOptions() {
     const res = await fetch(`${API_BASE}/api/options`);
@@ -3197,6 +3197,15 @@ document.addEventListener("DOMContentLoaded", function () {
       opt.value = s; opt.textContent = s;
       sectorSelect.appendChild(opt);
     });
+
+    // Add a general factory option for businesses that do not fit
+    // into one of the specific sector categories.
+    if (!Array.from(sectorSelect.options).some(o => o.value.toLowerCase() === 'factory')) {
+      const factoryOpt = document.createElement('option');
+      factoryOpt.value = 'Factory';
+      factoryOpt.textContent = 'Factory';
+      sectorSelect.appendChild(factoryOpt);
+    }
   }
 
   // ---------------------------------------------------------
