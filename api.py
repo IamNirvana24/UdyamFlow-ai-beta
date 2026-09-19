@@ -5,7 +5,7 @@ import numpy as np
 import joblib
 import os
 import re
-from tensorflow.keras.models import load_model
+import onnxruntime as ort
 
 from rag_routes import rag_bp
 from explainer_routes import explainer_bp
@@ -25,7 +25,8 @@ db.init_db()
 # ---------------------------------------------------------
 # Load trained model + preprocessor (produced by the notebook)
 # ---------------------------------------------------------
-model = load_model('udyamflow_ann_model.keras')
+onnx_session = ort.InferenceSession('udyamflow_ann_model.onnx')
+onnx_input_name = onnx_session.get_inputs()[0].name
 preprocessor = joblib.load('preprocessor.pkl')
 target_cols = joblib.load('target_cols.pkl')
 category_options = joblib.load('category_options.pkl')
@@ -177,7 +178,8 @@ def predict():
     if hasattr(X_processed, 'toarray'):
         X_processed = X_processed.toarray()
 
-    probabilities = model.predict(X_processed, verbose=0)[0]
+    X_processed = X_processed.astype(np.float32)  # ONNX Runtime requires float32
+    probabilities = onnx_session.run(None, {onnx_input_name: X_processed})[0][0]
 
     prob_map = {label: float(prob) for label, prob in zip(target_cols, probabilities)}
 
