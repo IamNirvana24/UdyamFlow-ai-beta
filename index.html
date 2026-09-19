@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js'"></script>
 <style>
   :root {
     --ink: #0D1730;
@@ -301,6 +301,13 @@
   }
 
   .field { margin-bottom: 0; }
+
+  .field-hint {
+    display: block;
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
 
   .field label {
     display: block;
@@ -668,135 +675,6 @@
     background: rgba(232, 163, 61, 0.12);
     border-color: rgba(232, 163, 61, 0.4);
     color: var(--amber);
-  }
-
-  .accountability-banner {
-    margin-top: 14px;
-    padding: 12px 16px;
-    background: rgba(232, 163, 61, 0.1);
-    border: 1px solid rgba(232, 163, 61, 0.35);
-    border-radius: 8px;
-    font-size: 13px;
-    color: #D9B679;
-    line-height: 1.6;
-  }
-
-  .journey-report-btn, .approval-report-btn {
-    font-size: 13px;
-    background: rgba(246, 241, 228, 0.05);
-    border: 1px solid rgba(246, 241, 228, 0.12);
-    border-radius: 5px;
-    padding: 5px 8px;
-    cursor: pointer;
-    line-height: 1;
-    opacity: 0.55;
-    transition: opacity 0.2s ease, border-color 0.2s ease, background 0.2s ease;
-  }
-
-  .journey-report-btn:hover, .approval-report-btn:hover {
-    opacity: 1;
-    background: rgba(220, 80, 70, 0.14);
-    border-color: rgba(220, 80, 70, 0.4);
-  }
-
-  .approval-report-btn { margin-left: 8px; }
-
-  /* Feedback modal — same visual language as the history modal */
-  .feedback-modal-backdrop {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(5, 10, 20, 0.72);
-    z-index: 9999;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-  }
-
-  .feedback-modal-backdrop.visible { display: flex; }
-
-  .feedback-modal {
-    background: #0D1730;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 14px;
-    width: 100%;
-    max-width: 480px;
-    padding: 22px;
-  }
-
-  .feedback-modal h3 {
-    margin: 0 0 4px;
-    color: #E7E9F5;
-    font-size: 17px;
-  }
-
-  .feedback-modal .feedback-subject {
-    color: #FFB067;
-    font-size: 13.5px;
-    margin-bottom: 16px;
-  }
-
-  .feedback-issue-options {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 14px;
-  }
-
-  .feedback-issue-options label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: #C7CCE5;
-    font-size: 13.5px;
-    cursor: pointer;
-  }
-
-  .feedback-comment {
-    width: 100%;
-    min-height: 70px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 8px;
-    color: #E7E9F5;
-    font-family: var(--font-body);
-    font-size: 13.5px;
-    padding: 10px 12px;
-    resize: vertical;
-    margin-bottom: 16px;
-  }
-
-  .feedback-modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-  }
-
-  .feedback-cancel-btn, .feedback-submit-btn {
-    padding: 9px 16px;
-    border-radius: 6px;
-    font-size: 13.5px;
-    cursor: pointer;
-    border: none;
-  }
-
-  .feedback-cancel-btn {
-    background: transparent;
-    color: #9AA3C4;
-  }
-
-  .feedback-submit-btn {
-    background: var(--saffron, #C9691E);
-    color: #fff;
-    font-weight: 600;
-  }
-
-  .feedback-submit-btn:disabled { opacity: 0.6; cursor: default; }
-
-  .feedback-success-note {
-    color: #7EC98A;
-    font-size: 13px;
-    margin-top: 4px;
   }
 
   .journey-why-btn {
@@ -3067,7 +2945,7 @@ document.addEventListener("DOMContentLoaded", function () {
       <div class="mark">U</div>
       <div class="wordmark">UdyamFlow AI</div>
     </div>
-    <h1 class="headline">Know your approvals before you build the factory.</h1>
+    <h1 class="headline">Know your approvals before you build your business.</h1>
     <p class="sub">Describe your proposed industrial business and get a predicted list of the licenses, NOCs, and registrations you'll likely need — built for Punjab's regulatory landscape.</p>
     <p class="pain-quote">"Exactly which approvals do I need, and what should I do next?"</p>
     <div class="network-caption">
@@ -3169,7 +3047,8 @@ document.addEventListener("DOMContentLoaded", function () {
         </div>
         <div class="field">
           <label for="power">Power Requirement (kW)</label>
-          <input type="number" id="power" value="40" min="1" max="500" required>
+          <input type="number" id="power" value="40" min="0" max="500" required>
+          <span class="field-hint">Enter 0 if not applicable to your business</span>
         </div>
         <div class="field">
           <label for="land">Land / Built-up Area (sqm)</label>
@@ -3178,6 +3057,7 @@ document.addEventListener("DOMContentLoaded", function () {
         <div class="field">
           <label for="water">Water Usage (KLD)</label>
           <input type="number" id="water" value="8" min="0" max="100" step="0.5" required>
+          <span class="field-hint">Enter 0 if not applicable to your business</span>
         </div>
       </div>
 
@@ -3296,30 +3176,8 @@ document.addEventListener("DOMContentLoaded", function () {
   </footer>
 </div>
 
-<div class="feedback-modal-backdrop" id="feedback-modal-backdrop">
-  <div class="feedback-modal">
-    <h3>Report incorrect prediction</h3>
-    <div class="feedback-subject" id="feedback-subject"></div>
-
-    <div class="feedback-issue-options">
-      <label><input type="radio" name="feedback-issue" value="wrongly_required" checked> This was marked required, but shouldn't be</label>
-      <label><input type="radio" name="feedback-issue" value="wrongly_missing"> This should be required, but wasn't flagged</label>
-      <label><input type="radio" name="feedback-issue" value="other"> Something else is off</label>
-    </div>
-
-    <textarea class="feedback-comment" id="feedback-comment" placeholder="Optional — tell us what's wrong or what you expected instead"></textarea>
-
-    <div id="feedback-success" class="feedback-success-note" style="display:none;">✓ Thanks — this has been logged for review.</div>
-
-    <div class="feedback-modal-actions">
-      <button type="button" class="feedback-cancel-btn" id="feedback-cancel-btn">Cancel</button>
-      <button type="button" class="feedback-submit-btn" id="feedback-submit-btn">Submit report</button>
-    </div>
-  </div>
-</div>
-
 <script>
-  const API_BASE = 'http://localhost:5000';
+  const API_BASE = 'https://udyamflow-ai-beta.onrender.com';
 
   async function loadOptions() {
     const res = await fetch(`${API_BASE}/api/options`);
@@ -3963,12 +3821,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const journeyList = document.getElementById('journey-list');
     const section = document.getElementById('results-section');
 
-    summary.innerHTML = `
-      Based on your profile, <strong>${data.required_count} approval(s)</strong> are likely required.
-      <div class="accountability-banner">
-        ⚠️ <strong>AI-generated recommendation</strong> — verify with the official Punjab government departments before acting on this. Confidence scores below reflect model certainty, not legal guarantee.
-      </div>
-    `;
+    summary.innerHTML = `Based on your profile, <strong>${data.required_count} approval(s)</strong> are likely required.`;
 
     // Dependency-ordered journey — reveals like clearance lights down a runway,
     // one step at a time, so the sequence itself is legible on a screen recording.
@@ -3991,7 +3844,6 @@ document.addEventListener("DOMContentLoaded", function () {
           </div>
           <button type="button" class="journey-why-btn" data-approval-key="${step.key}">Why? ▾</button>
           <button type="button" class="journey-ask-btn" data-approval-key="${step.key}" data-approval-name="${step.name}">Ask about this →</button>
-          <button type="button" class="journey-report-btn" data-approval-key="${step.key}" data-approval-name="${step.name}" title="Report this as incorrect">🚩</button>
         </div>
         <div class="journey-explanation" id="journey-explain-${step.key}"></div>
       `;
@@ -4015,7 +3867,6 @@ document.addEventListener("DOMContentLoaded", function () {
           <span class="approval-tag ${r.required ? 'tag-required' : 'tag-not-required'}">
             ${r.required ? 'Required' : 'Not required'}
           </span>
-          <button type="button" class="approval-report-btn" data-approval-key="${r.key}" data-approval-name="${r.name}" data-was-required="${r.required}" title="Report this as incorrect">🚩</button>
         </span>
       `;
       list.appendChild(row);
@@ -4559,16 +4410,23 @@ document.addEventListener("DOMContentLoaded", function () {
     downloadReportBtn.textContent = 'Generating report…';
 
     try {
-      const explanations = await fetchExplanations();
-
-      const pdfNamespace = window.jspdf || window.jsPDF;
-      const JsPDFConstructor = pdfNamespace && (pdfNamespace.jsPDF || pdfNamespace);
-      if (typeof JsPDFConstructor !== 'function') {
-        throw new Error(
-          'jsPDF library is unavailable. Open this page through a local HTTP server (for example: python -m http.server 5500) and check your internet connection.'
-        );
+      // Explanations are optional: the PDF must still generate if Bot 2 is unavailable.
+      let explanations = {};
+      try {
+        explanations = await Promise.race([
+          fetchExplanations(),
+          new Promise(resolve => setTimeout(() => resolve({}), 5000))
+        ]);
+      } catch (explanationError) {
+        console.warn('Report: explanations unavailable, continuing without them.', explanationError);
       }
-      const doc = new JsPDFConstructor({ unit: 'mm', format: 'a4' });
+
+      if (!window.jspdf || typeof window.jspdf.jsPDF !== 'function') {
+        throw new Error('jsPDF library did not load. Please refresh and try again.');
+      }
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: 'mm', format: 'a4' });
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
       const marginX = 20;
@@ -4624,18 +4482,20 @@ document.addEventListener("DOMContentLoaded", function () {
 
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(12);
-        doc.text(`${idx + 1}. ${step.name}`, marginX, y);
+        doc.text(`${idx + 1}. ${String(step.name || 'Approval')}`, marginX, y);
         y += 6;
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(9.5);
         doc.setTextColor(120, 90, 20);
-        doc.text(`Model confidence: ${step.confidence}%`, marginX, y);
+        doc.text(`Model confidence: ${String(step.confidence ?? 'N/A')}%`, marginX, y);
         doc.setTextColor(0, 0, 0);
         y += 6;
 
         const entry = explanations[step.key];
-        const whyText = entry ? entry.explanation : 'Explanation not available.';
+        const whyText = entry && entry.explanation
+          ? String(entry.explanation)
+          : 'Explanation not available.';
         doc.setFontSize(10);
         y = pdfAddWrapped(doc, whyText, marginX, y, maxWidth, 5.2, pageHeight, 20);
         y += 8;
@@ -4664,90 +4524,6 @@ document.addEventListener("DOMContentLoaded", function () {
     } finally {
       downloadReportBtn.disabled = false;
       downloadReportBtn.textContent = '⬇ Download compliance report (PDF)';
-    }
-  });
-
-  // ---------------------------------------------------------
-  // Report incorrect prediction — Accountability feature. A person can
-  // flag any specific approval (from the journey or the full breakdown)
-  // as wrong, rather than being expected to just trust the model.
-  // ---------------------------------------------------------
-  const feedbackBackdrop = document.getElementById('feedback-modal-backdrop');
-  const feedbackSubject = document.getElementById('feedback-subject');
-  const feedbackComment = document.getElementById('feedback-comment');
-  const feedbackSuccess = document.getElementById('feedback-success');
-  const feedbackSubmitBtn = document.getElementById('feedback-submit-btn');
-  let feedbackTarget = { approvalKey: null, approvalName: null };
-
-  function openFeedbackModal(approvalKey, approvalName, defaultIssue) {
-    feedbackTarget = { approvalKey, approvalName };
-    feedbackSubject.textContent = approvalName ? `Regarding: ${approvalName}` : 'General feedback on this prediction';
-    feedbackComment.value = '';
-    feedbackSuccess.style.display = 'none';
-    feedbackSubmitBtn.style.display = 'inline-block';
-    feedbackSubmitBtn.disabled = false;
-    feedbackSubmitBtn.textContent = 'Submit report';
-
-    const radios = document.querySelectorAll('input[name="feedback-issue"]');
-    radios.forEach(r => { r.checked = (r.value === (defaultIssue || 'other')); });
-
-    feedbackBackdrop.classList.add('visible');
-  }
-
-  document.getElementById('journey-list').addEventListener('click', (e) => {
-    const reportBtn = e.target.closest('.journey-report-btn');
-    if (!reportBtn) return;
-    openFeedbackModal(reportBtn.dataset.approvalKey, reportBtn.dataset.approvalName, 'wrongly_required');
-  });
-
-  document.getElementById('approval-list').addEventListener('click', (e) => {
-    const reportBtn = e.target.closest('.approval-report-btn');
-    if (!reportBtn) return;
-    const wasRequired = reportBtn.dataset.wasRequired === 'true';
-    openFeedbackModal(
-      reportBtn.dataset.approvalKey,
-      reportBtn.dataset.approvalName,
-      wasRequired ? 'wrongly_required' : 'wrongly_missing'
-    );
-  });
-
-  document.getElementById('feedback-cancel-btn').addEventListener('click', () => {
-    feedbackBackdrop.classList.remove('visible');
-  });
-  feedbackBackdrop.addEventListener('click', (e) => {
-    if (e.target === feedbackBackdrop) feedbackBackdrop.classList.remove('visible');
-  });
-
-  feedbackSubmitBtn.addEventListener('click', async () => {
-    const issueType = document.querySelector('input[name="feedback-issue"]:checked')?.value || 'other';
-    feedbackSubmitBtn.disabled = true;
-    feedbackSubmitBtn.textContent = 'Submitting…';
-
-    try {
-      const res = await fetch(`${API_BASE}/api/feedback`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prediction_id: currentPredictionId,
-          approval_key: feedbackTarget.approvalKey,
-          approval_name: feedbackTarget.approvalName,
-          issue_type: issueType,
-          comment: feedbackComment.value.trim()
-        })
-      });
-      const data = await res.json();
-      if (data.ok) {
-        feedbackSuccess.style.display = 'block';
-        feedbackSubmitBtn.style.display = 'none';
-        setTimeout(() => feedbackBackdrop.classList.remove('visible'), 1600);
-      } else {
-        throw new Error(data.error || 'Unknown error');
-      }
-    } catch (err) {
-      console.error('Feedback submission failed:', err);
-      feedbackSubmitBtn.disabled = false;
-      feedbackSubmitBtn.textContent = 'Submit report';
-      alert('Could not submit the report right now. Please try again in a moment.');
     }
   });
 
