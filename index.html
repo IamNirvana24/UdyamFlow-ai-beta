@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
 <style>
   :root {
     --ink: #0D1730;
@@ -301,6 +301,13 @@
   }
 
   .field { margin-bottom: 0; }
+
+  .field-hint {
+    display: block;
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
 
   .field label {
     display: block;
@@ -2938,7 +2945,7 @@ document.addEventListener("DOMContentLoaded", function () {
       <div class="mark">U</div>
       <div class="wordmark">UdyamFlow AI</div>
     </div>
-    <h1 class="headline">Know your approvals before you build the factory.</h1>
+    <h1 class="headline">Know your approvals before you build your business.</h1>
     <p class="sub">Describe your proposed industrial business and get a predicted list of the licenses, NOCs, and registrations you'll likely need — built for Punjab's regulatory landscape.</p>
     <p class="pain-quote">"Exactly which approvals do I need, and what should I do next?"</p>
     <div class="network-caption">
@@ -3040,7 +3047,8 @@ document.addEventListener("DOMContentLoaded", function () {
         </div>
         <div class="field">
           <label for="power">Power Requirement (kW)</label>
-          <input type="number" id="power" value="40" min="1" max="500" required>
+          <input type="number" id="power" value="40" min="0" max="500" required>
+          <span class="field-hint">Enter 0 if not applicable to your business</span>
         </div>
         <div class="field">
           <label for="land">Land / Built-up Area (sqm)</label>
@@ -3049,6 +3057,7 @@ document.addEventListener("DOMContentLoaded", function () {
         <div class="field">
           <label for="water">Water Usage (KLD)</label>
           <input type="number" id="water" value="8" min="0" max="100" step="0.5" required>
+          <span class="field-hint">Enter 0 if not applicable to your business</span>
         </div>
       </div>
 
@@ -3168,13 +3177,8 @@ document.addEventListener("DOMContentLoaded", function () {
 </div>
 
 <script>
-  // Local dev (opened via file:// or served on localhost) still needs the
-  // absolute localhost URL, since a relative fetch has no origin to resolve
-  // against there. Once deployed (Render, or anywhere else), the same Flask
-  // app serves both the frontend and the API, so a relative path just hits
-  // whatever domain the page is already loaded from — no hardcoded URL,
-  // no CORS, works on any deploy without editing this file again.
-  const API_BASE = "https://udyamflow-ai-beta.onrender.com";
+  const API_BASE = 'http://localhost:5000';
+
   async function loadOptions() {
     const res = await fetch(`${API_BASE}/api/options`);
     const data = await res.json();
@@ -4408,14 +4412,8 @@ document.addEventListener("DOMContentLoaded", function () {
     try {
       const explanations = await fetchExplanations();
 
-      const pdfNamespace = window.jspdf || window.jsPDF;
-      const JsPDFConstructor = pdfNamespace && (pdfNamespace.jsPDF || pdfNamespace);
-      if (typeof JsPDFConstructor !== 'function') {
-        throw new Error(
-          'jsPDF library is unavailable. Open this page through a local HTTP server (for example: python -m http.server 5500) and check your internet connection.'
-        );
-      }
-      const doc = new JsPDFConstructor({ unit: 'mm', format: 'a4' });
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: 'mm', format: 'a4' });
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
       const marginX = 20;
