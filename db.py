@@ -86,6 +86,27 @@ class CopilotMessage(Base):
     prediction = relationship("Prediction", back_populates="messages")
 
 
+class Feedback(Base):
+    """A person flagging one specific approval within a prediction as wrong
+    — the Accountability feature: never let the model's word be final
+    without a way to push back on it. Reviewed manually for now; at scale
+    this is what you'd feed back into retraining or a correction list."""
+    __tablename__ = "feedback"
+
+    id = Column(Integer, primary_key=True)
+    session_id = Column(String(64), index=True, nullable=False)
+    prediction_id = Column(Integer, ForeignKey("predictions.id"), nullable=True)
+
+    approval_key = Column(String(64), nullable=True)   # which approval was flagged, if specific
+    approval_name = Column(String(120), nullable=True)
+    issue_type = Column(String(32), nullable=False)     # 'wrongly_required' / 'wrongly_missing' / 'other'
+    comment = Column(Text, nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+    prediction = relationship("Prediction")
+
+
 def init_db():
     """Creates tables if they don't exist yet. Safe to call every startup."""
     Base.metadata.create_all(bind=engine)

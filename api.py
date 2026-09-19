@@ -3,43 +3,32 @@ from flask_cors import CORS
 import pandas as pd
 import numpy as np
 import joblib
+import os
 import re
-import onnxruntime as ort
+from tensorflow.keras.models import load_model
 
 from rag_routes import rag_bp
 from explainer_routes import explainer_bp
 import db
 
 app = Flask(__name__)
-CORS(app)
+
+# In production, set ALLOWED_ORIGIN to your deployed frontend's exact URL
+# (e.g. https://udyamflow.vercel.app) instead of leaving this wide open.
+ALLOWED_ORIGIN = os.environ.get("ALLOWED_ORIGIN", "*")
+CORS(app, origins=[ALLOWED_ORIGIN] if ALLOWED_ORIGIN != "*" else "*")
+
 app.register_blueprint(rag_bp)
 app.register_blueprint(explainer_bp)
 db.init_db()
 
 # ---------------------------------------------------------
 # Load trained model + preprocessor (produced by the notebook)
-#
-# Uses ONNX Runtime instead of full TensorFlow/Keras — the Keras runtime
-# alone costs 300-500MB RAM even for a small model, which crashes low-RAM
-# hosting tiers. ONNX Runtime costs ~50-80MB for the same model. The .onnx
-# file is a numerically-verified conversion of the original .keras model
-# (max output difference: 6e-8, floating-point noise only — not a retrain).
 # ---------------------------------------------------------
+model = load_model('udyamflow_ann_model.keras')
 preprocessor = joblib.load('preprocessor.pkl')
 target_cols = joblib.load('target_cols.pkl')
 category_options = joblib.load('category_options.pkl')
-
-onnx_session = ort.InferenceSession('udyamflow_ann_model.onnx')
-ONNX_INPUT_NAME = onnx_session.get_inputs()[0].name
-
-
-def run_model(X_processed):
-    """Runs inference through ONNX Runtime, matching the Keras model's
-    .predict(X, verbose=0)[0] return shape (1D array of per-label
-    probabilities)."""
-    X_processed = np.asarray(X_processed, dtype=np.float32)
-    outputs = onnx_session.run(None, {ONNX_INPUT_NAME: X_processed})
-    return outputs[0][0]
 
 LICENSE_LABELS = {
     'trade_license': 'Trade License',
@@ -188,7 +177,7 @@ def predict():
     if hasattr(X_processed, 'toarray'):
         X_processed = X_processed.toarray()
 
-    probabilities = run_model(X_processed)
+    probabilities = model.predict(X_processed, verbose=0)[0]
 
     prob_map = {label: float(prob) for label, prob in zip(target_cols, probabilities)}
 
@@ -307,6 +296,119 @@ def history_detail(prediction_id):
         })
 
 
+@app.route('/api/feedback', methods=['POST'])
+def submit_feedback():
+    """Accountability feature — lets a person flag a specific approval (or
+    the prediction generally) as wrong, instead of just having to trust the
+    model's output. Best-effort save; a DB hiccup here should never block
+    the person from having reported the issue in spirit even if logging fails."""
+    data = request.get_json(silent=True) or {}
+    session_id = data.get('session_id', 'anonymous')
+    prediction_id = data.get('prediction_id')
+    approval_key = data.get('approval_key')
+    approval_name = data.get('approval_name')
+    issue_type = data.get('issue_type', 'other')
+    comment = (data.get('comment') or '').strip()
+
+    if issue_type not in ('wrongly_required', 'wrongly_missing', 'other'):
+        issue_type = 'other'
+
+    try:
+        with db.get_db_session() as db_session:
+            row = db.Feedback(
+                session_id=session_id,
+                prediction_id=prediction_id,
+                approval_key=approval_key,
+                approval_name=approval_name,
+                issue_type=issue_type,
+                comment=comment,
+            )
+            db_session.add(row)
+            db_session.flush()
+            feedback_id = row.id
+        return jsonify({'ok': True, 'feedback_id': feedback_id}), 200
+    except Exception as exc:  # noqa: BLE001
+        print(f"[warn] could not save feedback: {exc}")
+        return jsonify({'ok': False, 'error': 'Could not save feedback right now.'}), 500
+
+
+@app.route('/admin/feedback', methods=['GET'])
+def admin_feedback():
+    """A simple in-browser view of everything submitted through 'Report
+    incorrect prediction' — not secured (no login), fine for a hackathon
+    demo, but don't rely on this for anything with real user data later."""
+    with db.get_db_session() as db_session:
+        rows = (
+            db_session.query(db.Feedback)
+            .order_by(db.Feedback.created_at.desc())
+            .limit(200)
+            .all()
+        )
+
+        issue_labels = {
+            'wrongly_required': 'Wrongly marked required',
+            'wrongly_missing': 'Wrongly marked not required',
+            'other': 'Other issue',
+        }
+
+        rows_html = ''
+        if not rows:
+            rows_html = '<tr><td colspan="5" class="empty">No feedback submitted yet.</td></tr>'
+        else:
+            for r in rows:
+                rows_html += f"""
+                <tr>
+                    <td>{r.created_at.strftime('%d %b %Y, %H:%M')}</td>
+                    <td>{r.prediction_id if r.prediction_id else '—'}</td>
+                    <td>{r.approval_name or '—'}</td>
+                    <td><span class="badge badge-{r.issue_type}">{issue_labels.get(r.issue_type, r.issue_type)}</span></td>
+                    <td>{r.comment or '<span class="muted">No comment</span>'}</td>
+                </tr>"""
+
+        html = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>UdyamFlow AI — Feedback Reports</title>
+<style>
+  body {{
+    background: #090F22; color: #E7E9F5; font-family: -apple-system, Segoe UI, sans-serif;
+    margin: 0; padding: 40px 24px;
+  }}
+  .wrap {{ max-width: 1100px; margin: 0 auto; }}
+  h1 {{ font-size: 22px; margin-bottom: 4px; }}
+  .subtitle {{ color: #7C86AD; font-size: 13.5px; margin-bottom: 28px; }}
+  table {{ width: 100%; border-collapse: collapse; font-size: 13.5px; }}
+  th {{ text-align: left; padding: 10px 14px; color: #9AA3C4; border-bottom: 1px solid rgba(255,255,255,0.1); font-weight: 600; }}
+  td {{ padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.06); vertical-align: top; }}
+  tr:hover {{ background: rgba(255,255,255,0.02); }}
+  .empty {{ text-align: center; color: #7C86AD; padding: 40px 0 !important; }}
+  .muted {{ color: #7C86AD; font-style: italic; }}
+  .badge {{ padding: 3px 10px; border-radius: 12px; font-size: 12px; white-space: nowrap; }}
+  .badge-wrongly_required {{ background: rgba(220,80,70,0.15); color: #F08A82; }}
+  .badge-wrongly_missing {{ background: rgba(232,163,61,0.15); color: #FFB067; }}
+  .badge-other {{ background: rgba(255,255,255,0.08); color: #C7CCE5; }}
+  .count {{ color: #FFB067; font-weight: 600; }}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Feedback Reports</h1>
+    <div class="subtitle"><span class="count">{len(rows)}</span> report(s) submitted through "Report incorrect prediction"</div>
+    <table>
+      <thead>
+        <tr><th>Date</th><th>Prediction ID</th><th>Approval</th><th>Issue</th><th>Comment</th></tr>
+      </thead>
+      <tbody>{rows_html}</tbody>
+    </table>
+  </div>
+</body>
+</html>"""
+        return html
+
+
 if __name__ == '__main__':
-    print("UdyamFlow AI backend running on http://localhost:5000")
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get('PORT', 5000))
+    debug_mode = os.environ.get('FLASK_DEBUG', '0') == '1'
+    print(f"UdyamFlow AI backend running on port {port}")
+    app.run(debug=debug_mode, host='0.0.0.0', port=port)
